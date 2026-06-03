@@ -1,5 +1,7 @@
 # hafeznevis — a tiny GPT that writes Hafez (حافظ‌نویس)
 
+📖 **Interactive guide (Persian):** https://eiliyaabedini.github.io/hafeznevis/
+
 A character-level GPT trained from scratch on the **Divan of Hafez** — the collected
 poems of the 14th-century Persian poet Hafez of Shiraz. It learns the shape of Persian
 ghazals one character at a time and generates new, Hafez-flavored verse.
