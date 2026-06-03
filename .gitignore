@@ -1,6 +1,3 @@
-# trained model checkpoints (tracked via Git LFS once ready — see README)
-*.pt
-
 # generated output
 hafez_generated.txt
 train.log
