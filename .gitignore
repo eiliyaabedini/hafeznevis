@@ -1,0 +1,15 @@
+# trained model checkpoints (tracked via Git LFS once ready — see README)
+*.pt
+
+# generated output
+hafez_generated.txt
+train.log
+
+# the Karpathy lecture transcript (third-party content, not ours to redistribute)
+Let's build GPT from scratch, in code, spelled out*.txt
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
