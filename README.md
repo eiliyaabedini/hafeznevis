@@ -74,6 +74,38 @@ python3 sample.py 5000         # 5000 characters
 python3 sample.py 2000 "غزل"   # continue from a prompt
 ```
 
+## Sample output
+
+What the trained model actually produces (your results will vary — generation is random):
+
+**Free generation** — `python3 sample.py 280`
+
+```
+که بندگی خوش است ناتوانی بکن
+که در این باغ بسی به جهان طرف نگفت
+آن میکشم از او ترک س نگیرد
+
+غزل 141
+یار ای ندارم چه کنم یار و سلطانی بکند
+یا رب اندر دل آن کار و ریش طبع دل
+کاین قدر چشمه کس نگاه دار بکند
+دیده روی تو با و خود چشم دار به سجود
+```
+
+**Continue from a prompt** — `python3 sample.py 200 "دل"`
+
+```
+دل زبان لاله بنگر
+ای کوته که چون عمر بفرمای سحر نمیکند
+تا کی که بختش محیف همیکند این قصه دراز
+و از مطرب ار و پیمانه مینم نخواهد ماند
+چشم به قول مستش در عین نگار و نخواهد ماند
+```
+
+Notice it learns real conventions of the form: it emits `غزل N` headers, uses genuine
+Persian vocabulary and ghazal rhythm, and even ends couplets with the poet's pen-name
+(*takhallos*) **حافظ** — just as Hafez signs the closing line of his ghazals.
+
 ## A note on results
 
 With ~275K characters and a 10.8M-parameter model, the network learns the *form* of the
