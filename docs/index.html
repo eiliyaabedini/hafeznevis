@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ساخت GPT از صفر — راهنمای تعاملی</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0e16; --bg2:#0e131f; --bg3:#131b2a; --raised:#172033;
+  --line:rgba(150,172,205,.10); --line2:rgba(150,172,205,.18);
+  --ink:#e9edf4; --ink-dim:#aab3c4; --ink-faint:#727d92;
+  --hot:#ff9a52; --hot2:#ffbb7d; --hot-soft:rgba(255,154,82,.14);
+  --cold:#36d6c2; --cold2:#7eeede; --cold-soft:rgba(54,214,194,.12);
+  --violet:#b58bff; --pink:#ff6f9c;
+  --good:#3ed29a; --bad:#ff6b6b;
+  --serif:'Fraunces',Georgia,serif;
+  --sans:'Hanken Grotesk',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --shadow:0 18px 50px rgba(0,0,0,.5);
+  --r:14px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; font-family:var(--sans); color:var(--ink); background:var(--bg);
+  background-image:
+    radial-gradient(900px 600px at 88% -8%, rgba(255,154,82,.10), transparent 60%),
+    radial-gradient(820px 620px at 6% 108%, rgba(54,214,194,.09), transparent 60%),
+    linear-gradient(rgba(150,172,205,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(150,172,205,.035) 1px, transparent 1px);
+  background-size:auto,auto,26px 26px,26px 26px;
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased; line-height:1.5;
+}
+::selection{background:var(--hot-soft); color:var(--hot2)}
+a{color:var(--cold2)}
+
+/* ---------- top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px;
+  padding:13px 22px; background:rgba(10,14,22,.78); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:.2px}
+.brand .glyph{
+  width:30px; height:30px; border-radius:8px; flex:none;
+  background:linear-gradient(135deg,var(--hot),var(--pink) 55%,var(--violet));
+  display:grid; place-items:center; font-family:var(--mono); font-weight:700;
+  font-size:14px; color:#0a0e16; box-shadow:0 4px 16px rgba(255,154,82,.35);
+}
+.brand small{display:block; font-weight:500; font-size:11px; color:var(--ink-faint); letter-spacing:.3px}
+.brand b{font-size:15px}
+.topbar .spacer{flex:1}
+.progress-mini{display:flex; align-items:center; gap:10px; font-family:var(--mono); font-size:12px; color:var(--ink-dim)}
+.progress-mini .track{width:120px; height:6px; border-radius:99px; background:var(--bg3); overflow:hidden; border:1px solid var(--line)}
+.progress-mini .fill{height:100%; width:0%; background:linear-gradient(90deg,var(--cold),var(--hot)); transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.tb-btn{
+  font-family:var(--mono); font-size:12px; color:var(--ink-dim); cursor:pointer;
+  background:var(--bg3); border:1px solid var(--line2); padding:7px 12px; border-radius:9px;
+  transition:.18s;
+}
+.tb-btn:hover{color:var(--ink); border-color:var(--hot); background:var(--hot-soft)}
+.menu-btn{display:none}
+
+/* ---------- layout ---------- */
+.shell{display:grid; grid-template-columns:288px 1fr; max-width:1320px; margin:0 auto; min-height:calc(100vh - 57px)}
+.sidebar{
+  border-right:1px solid var(--line); padding:22px 14px 60px; position:sticky; top:57px;
+  height:calc(100vh - 57px); overflow-y:auto;
+}
+.sidebar h4{font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-faint); margin:4px 10px 14px}
+.lesson-link{
+  display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left; cursor:pointer;
+  background:transparent; border:1px solid transparent; border-radius:11px; padding:10px 11px; margin-bottom:3px;
+  color:var(--ink-dim); transition:.16s; font-family:inherit;
+}
+.lesson-link:hover{background:var(--bg2); color:var(--ink)}
+.lesson-link.active{background:linear-gradient(100deg,var(--hot-soft),transparent); border-color:var(--line2); color:var(--ink)}
+.lesson-link.active .ll-num{background:var(--hot); color:#0a0e16; border-color:transparent}
+.ll-num{
+  flex:none; width:26px; height:26px; border-radius:7px; display:grid; place-items:center;
+  font-family:var(--mono); font-size:12px; font-weight:700; background:var(--bg3);
+  border:1px solid var(--line2); color:var(--ink-dim); transition:.16s; position:relative;
+}
+.lesson-link.done .ll-num{background:var(--cold-soft); border-color:var(--cold); color:var(--cold2)}
+.lesson-link.done .ll-num::after{content:"✓"; font-size:13px}
+.lesson-link.done .ll-num span{display:none}
+.ll-meta{min-width:0}
+.ll-title{font-weight:600; font-size:14px; line-height:1.25}
+.ll-sub{font-size:11.5px; color:var(--ink-faint); margin-top:2px; font-family:var(--mono)}
+
+/* ---------- main ---------- */
+.main{padding:38px clamp(20px,4vw,64px) 120px; min-width:0; max-width:880px}
+.eyebrow{font-family:var(--mono); font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--hot); margin-bottom:14px; display:flex; align-items:center; gap:10px}
+.eyebrow .dot{width:6px; height:6px; border-radius:99px; background:var(--hot); box-shadow:0 0 12px var(--hot)}
+h1.title{font-family:var(--serif); font-weight:600; font-size:clamp(30px,5vw,52px); line-height:1.04; letter-spacing:-.5px; margin:0 0 14px}
+h1.title em{font-style:italic; color:var(--hot2)}
+.subtitle{font-size:18px; color:var(--ink-dim); max-width:62ch; margin-bottom:8px}
+.section-rule{height:1px; background:linear-gradient(90deg,var(--line2),transparent); margin:30px 0}
+
+.lead{font-size:17px; color:var(--ink); max-width:66ch}
+.main p{max-width:66ch; color:var(--ink-dim); font-size:15.5px}
+.main p strong, .main li strong{color:var(--ink); font-weight:600}
+.main h2{font-family:var(--serif); font-weight:600; font-size:26px; letter-spacing:-.2px; margin:40px 0 8px}
+.main h3{font-size:15px; font-family:var(--mono); text-transform:uppercase; letter-spacing:2px; color:var(--cold2); margin:30px 0 10px}
+.main ul{max-width:66ch; padding-left:0; list-style:none}
+.main ul li{position:relative; padding-left:24px; margin:9px 0; color:var(--ink-dim); font-size:15.5px}
+.main ul li::before{content:""; position:absolute; left:4px; top:9px; width:7px; height:7px; border-radius:2px; background:var(--hot); transform:rotate(45deg)}
+.kbd{font-family:var(--mono); font-size:.86em; background:var(--bg3); border:1px solid var(--line2); border-radius:5px; padding:1px 6px; color:var(--cold2)}
+.main p code, .main li code{font-family:var(--mono); font-size:.86em; background:var(--bg3); border:1px solid var(--line); border-radius:5px; padding:1px 6px; color:var(--hot2)}
+
+/* callout */
+.note{
+  border:1px solid var(--line2); border-left:3px solid var(--cold); border-radius:12px;
+  background:linear-gradient(100deg,var(--cold-soft),transparent 70%); padding:14px 18px; margin:22px 0; max-width:66ch;
+}
+.note.hot{border-left-color:var(--hot); background:linear-gradient(100deg,var(--hot-soft),transparent 70%)}
+.note .nh{font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--cold2); margin-bottom:5px}
+.note.hot .nh{color:var(--hot2)}
+.note p{margin:0; color:var(--ink); font-size:14.5px; max-width:none}
+
+/* code */
+.codewrap{border:1px solid var(--line2); border-radius:12px; overflow:hidden; margin:20px 0; box-shadow:var(--shadow); background:#181a26}
+.codehead{display:flex; align-items:center; gap:8px; padding:9px 14px; background:#10121b; border-bottom:1px solid var(--line)}
+.codehead .d{width:11px; height:11px; border-radius:99px}
+.codehead .d.r{background:#ff5f57}.codehead .d.y{background:#febc2e}.codehead .d.g{background:#28c840}
+.codehead .fname{margin-left:8px; font-family:var(--mono); font-size:12px; color:var(--ink-faint)}
+pre[class*="language-"]{margin:0 !important; border-radius:0 !important; font-size:13px !important; padding:16px 18px !important; background:#181a26 !important}
+code[class*="language-"]{font-family:var(--mono) !important; font-size:13px !important; text-shadow:none !important}
+
+/* widgets */
+.widget{border:1px solid var(--line2); border-radius:var(--r); background:linear-gradient(180deg,var(--bg2),var(--bg)); margin:26px 0; overflow:hidden; box-shadow:var(--shadow)}
+.widget-head{display:flex; align-items:center; gap:10px; padding:13px 18px; border-bottom:1px solid var(--line); background:var(--bg3)}
+.widget-head .wlabel{font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--hot2)}
+.widget-head .wtitle{font-weight:700; font-size:14px}
+.widget-head .pill{margin-left:auto; font-family:var(--mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--cold2); border:1px solid var(--cold); border-radius:99px; padding:3px 9px; background:var(--cold-soft)}
+.widget-body{padding:18px}
+.widget .hint{font-size:12.5px; color:var(--ink-faint); margin-top:12px; font-family:var(--mono)}
+.ctrl-row{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px}
+.btn{font-family:var(--mono); font-size:12.5px; cursor:pointer; background:var(--raised); border:1px solid var(--line2); color:var(--ink); padding:8px 14px; border-radius:9px; transition:.16s; font-weight:500}
+.btn:hover{border-color:var(--hot); background:var(--hot-soft); color:var(--hot2)}
+.btn.cold:hover{border-color:var(--cold); background:var(--cold-soft); color:var(--cold2)}
+.btn.on{border-color:var(--hot); background:var(--hot-soft); color:var(--hot2)}
+.toggle-group{display:inline-flex; border:1px solid var(--line2); border-radius:9px; overflow:hidden}
+.toggle-group button{font-family:var(--mono); font-size:12px; padding:7px 13px; background:transparent; border:none; color:var(--ink-dim); cursor:pointer; transition:.15s}
+.toggle-group button.on{background:var(--hot-soft); color:var(--hot2)}
+.toggle-group button+button{border-left:1px solid var(--line2)}
+.textin{font-family:var(--mono); font-size:14px; width:100%; background:var(--bg); border:1px solid var(--line2); color:var(--ink); border-radius:10px; padding:11px 13px; outline:none}
+.textin:focus{border-color:var(--hot)}
+input[type=range]{-webkit-appearance:none; appearance:none; height:6px; border-radius:99px; background:var(--bg3); border:1px solid var(--line); outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:99px; background:var(--hot); cursor:pointer; box-shadow:0 0 0 4px var(--hot-soft); border:2px solid #0a0e16}
+input[type=range]::-moz-range-thumb{width:16px; height:16px; border-radius:99px; background:var(--hot); cursor:pointer; border:2px solid #0a0e16}
+.slabel{font-family:var(--mono); font-size:12px; color:var(--ink-dim); display:flex; gap:8px; align-items:center}
+.slabel b{color:var(--hot2)}
+
+/* token chips */
+.chips{display:flex; flex-wrap:wrap; gap:7px}
+.chip{display:inline-flex; flex-direction:column; align-items:center; border:1px solid var(--line2); border-radius:8px; padding:5px 4px 4px; min-width:30px; background:var(--bg3); transition:.15s}
+.chip .c{font-family:var(--mono); font-weight:700; font-size:15px; color:var(--ink)}
+.chip .i{font-family:var(--mono); font-size:10px; color:var(--cold2); margin-top:2px}
+.chip.space{background:repeating-linear-gradient(45deg,var(--bg3),var(--bg3) 4px,var(--bg2) 4px,var(--bg2) 8px)}
+.chip:hover{border-color:var(--hot); transform:translateY(-2px)}
+
+.statgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:12px}
+.stat{border:1px solid var(--line2); border-radius:10px; padding:11px 13px; background:var(--bg3)}
+.stat .v{font-family:var(--mono); font-size:22px; font-weight:700; color:var(--hot2)}
+.stat .v.cold{color:var(--cold2)}
+.stat .k{font-size:11px; color:var(--ink-faint); margin-top:2px; text-transform:uppercase; letter-spacing:1px; font-family:var(--mono)}
+
+/* svg grid cells */
+.matrix-svg, .att-svg{width:100%; height:auto; display:block; font-family:var(--mono)}
+.celltext{font-family:var(--mono); font-size:11px; fill:var(--ink)}
+.axlabel{font-family:var(--mono); font-size:11px; fill:var(--ink-faint)}
+
+/* output box */
+.outbox{font-family:var(--mono); font-size:13.5px; line-height:1.7; background:var(--bg); border:1px solid var(--line2); border-radius:10px; padding:14px 16px; color:var(--cold2); white-space:pre-wrap; word-break:break-word; min-height:54px}
+.outbox .gen{color:var(--hot2)}
+
+/* quiz */
+.quiz{border:1px solid var(--line2); border-radius:var(--r); margin:34px 0 10px; overflow:hidden; box-shadow:var(--shadow); background:linear-gradient(180deg,var(--bg2),var(--bg))}
+.quiz-head{padding:15px 20px; border-bottom:1px solid var(--line); background:var(--bg3); display:flex; align-items:center; gap:12px}
+.quiz-head .qlabel{font-family:var(--mono); font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--violet)}
+.quiz-head .qprog{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--ink-faint)}
+.quiz-body{padding:22px}
+.qbar{height:4px; background:var(--bg3); border-radius:99px; overflow:hidden; margin-bottom:18px}
+.qbar i{display:block; height:100%; background:linear-gradient(90deg,var(--violet),var(--hot)); width:0; transition:width .4s}
+.qtext{font-size:18px; font-weight:600; color:var(--ink); margin-bottom:16px; line-height:1.4; font-family:var(--serif)}
+.qopts{display:grid; gap:9px}
+.qopt{
+  text-align:left; font-family:inherit; font-size:14.5px; color:var(--ink-dim); cursor:pointer;
+  background:var(--bg3); border:1px solid var(--line2); border-radius:10px; padding:13px 15px; transition:.14s;
+  display:flex; gap:11px; align-items:center;
+}
+.qopt:hover:not(:disabled){border-color:var(--hot); color:var(--ink); transform:translateX(3px)}
+.qopt .key{font-family:var(--mono); font-size:12px; width:22px; height:22px; flex:none; border-radius:6px; display:grid; place-items:center; background:var(--bg); border:1px solid var(--line2); color:var(--ink-faint)}
+.qopt.correct{border-color:var(--good); background:rgba(62,210,154,.12); color:var(--ink)}
+.qopt.correct .key{background:var(--good); color:#04130c; border-color:transparent}
+.qopt.wrong{border-color:var(--bad); background:rgba(255,107,107,.1); color:var(--ink)}
+.qopt.wrong .key{background:var(--bad); color:#1a0606; border-color:transparent}
+.qopt:disabled{cursor:default}
+.qwhy{margin-top:15px; border-radius:10px; padding:13px 16px; font-size:14px; line-height:1.55; border:1px solid var(--line2); background:var(--bg); color:var(--ink-dim); display:none}
+.qwhy.show{display:block; animation:fade .35s}
+.qwhy b{color:var(--cold2)}
+.qwhy .advancing{display:block; margin-top:9px; font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:1px}
+@keyframes fade{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+
+/* quiz result */
+.qresult{padding:30px; text-align:center}
+.qresult .ring{margin:0 auto 16px}
+.qresult h3{font-family:var(--serif); text-transform:none; letter-spacing:0; color:var(--ink); font-size:24px; margin:0 0 6px}
+.qresult p{margin:0 auto 8px; color:var(--ink-dim); max-width:50ch}
+.miss-list{text-align:left; margin:18px auto 0; max-width:56ch; display:grid; gap:8px}
+.miss-item{border:1px solid var(--line2); border-left:3px solid var(--bad); border-radius:9px; padding:10px 13px; background:var(--bg3); font-size:13.5px; color:var(--ink-dim)}
+.miss-item.ok{border-left-color:var(--good)}
+.miss-item b{color:var(--ink); display:block; margin-bottom:3px; font-size:13px}
+
+/* nav footer of lesson */
+.lesson-nav{display:flex; gap:12px; margin-top:46px; padding-top:24px; border-top:1px solid var(--line)}
+.lnav{flex:1; cursor:pointer; background:var(--bg2); border:1px solid var(--line2); border-radius:12px; padding:15px 18px; transition:.16s; text-align:left}
+.lnav:hover{border-color:var(--hot); background:var(--hot-soft)}
+.lnav.next{text-align:right}
+.lnav .lk{font-family:var(--mono); font-size:11px; color:var(--ink-faint); letter-spacing:1px}
+.lnav .lt{font-weight:600; margin-top:4px; color:var(--ink)}
+.lnav.disabled{opacity:.35; pointer-events:none}
+
+/* report view */
+.report-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px; margin:24px 0}
+.rcard{border:1px solid var(--line2); border-radius:12px; padding:18px; background:var(--bg2)}
+.rcard .bigv{font-family:var(--mono); font-size:40px; font-weight:700; line-height:1; background:linear-gradient(120deg,var(--hot),var(--cold)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+.rcard .bk{font-size:12px; color:var(--ink-faint); margin-top:6px; text-transform:uppercase; letter-spacing:1px; font-family:var(--mono)}
+.rrow{display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--line)}
+.rrow:last-child{border-bottom:none}
+.rrow .rnum{font-family:var(--mono); font-size:12px; color:var(--ink-faint); width:24px}
+.rrow .rname{flex:1; font-size:14px}
+.rrow .rbar{width:120px; height:7px; border-radius:99px; background:var(--bg3); overflow:hidden}
+.rrow .rbar i{display:block; height:100%; border-radius:99px}
+.rrow .rscore{font-family:var(--mono); font-size:12px; width:46px; text-align:right; color:var(--ink-dim)}
+.tag-weak{font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:99px; background:rgba(255,107,107,.14); color:var(--bad); border:1px solid var(--bad)}
+.tag-strong{font-family:var(--mono); font-size:10px; padding:2px 7px; border-radius:99px; background:rgba(62,210,154,.14); color:var(--good); border:1px solid var(--good)}
+
+footer.foot{max-width:880px; margin:0; padding:30px clamp(20px,4vw,64px); color:var(--ink-faint); font-size:12.5px; border-top:1px solid var(--line)}
+footer.foot a{color:var(--cold2)}
+
+@media (max-width:900px){
+  .shell{grid-template-columns:1fr}
+  .sidebar{position:fixed; top:57px; left:0; width:300px; background:var(--bg2); z-index:35; transform:translateX(-105%); transition:transform .28s; box-shadow:var(--shadow)}
+  .sidebar.open{transform:none}
+  .menu-btn{display:inline-flex}
+  .scrim{position:fixed; inset:57px 0 0; background:rgba(0,0,0,.5); z-index:30; display:none}
+  .scrim.show{display:block}
+  .progress-mini .track{width:80px}
+}
+@media (max-width:560px){
+  .brand small{display:none}
+  .progress-mini span.lbl{display:none}
+}
+
+/* ===================== Persian / RTL overrides ===================== */
+:root{ --sans:'Vazirmatn', system-ui, sans-serif; --serif:'Vazirmatn', Georgia, serif; }
+html{ direction:rtl; }
+h1.title em{ font-style:normal; }
+[dir="ltr"]{ direction:ltr; unicode-bidi:isolate; }
+.progress-mini .track, .qbar, .rrow .rbar{ direction:ltr; }
+.main ul{ padding-left:0; padding-right:0; }
+.main ul li{ padding-left:0; padding-right:24px; }
+.main ul li::before{ left:auto; right:4px; }
+.note{ border-left:none; border-right:3px solid var(--cold); }
+.note.hot{ border-left:none; border-right-color:var(--hot); }
+.miss-item{ border-left:none; border-right:3px solid var(--bad); }
+.miss-item.ok{ border-right-color:var(--good); }
+.miss-list{ text-align:right; }
+.lnav{ text-align:right; }
+.lnav.next{ text-align:left; }
+.qopt:hover:not(:disabled){ transform:translateX(-3px); }
+.codehead .fname{ margin-left:0; margin-right:8px; }
+.chips{ display:flex; flex-wrap:wrap; gap:6px; }
+/* AI-prompt callout (new) */
+.aiprompt{ border:1px solid var(--line2); border-right:3px solid var(--violet); border-radius:12px; padding:13px 16px; margin:22px 0; background:linear-gradient(280deg, rgba(181,139,255,.10), transparent 72%); }
+.aiprompt .ah{ font-family:var(--mono); font-size:12px; letter-spacing:.5px; color:var(--violet); margin-bottom:7px; }
+.aiprompt p{ margin:0; color:var(--ink); font-size:15px; max-width:none; line-height:1.7; }
+@media (max-width:900px){
+  .sidebar{ left:auto; right:0; transform:translateX(105%); }
+  .sidebar.open{ transform:none; }
+}
+/* ===================== آزمایشگاهِ شبکه‌ی عصبی (صحنه ۰۴) ===================== */
+.nnlab{direction:rtl}
+.nnlab .tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.nnlab .tab{font-family:var(--sans);font-size:13.5px;cursor:pointer;background:var(--bg3);border:1px solid var(--line2);color:var(--ink-dim);padding:8px 14px;border-radius:10px;transition:.16s;font-weight:600}
+.nnlab .tab:hover{border-color:var(--hot);color:var(--ink)}
+.nnlab .tab.on{background:var(--hot-soft);border-color:var(--hot);color:var(--hot2)}
+.nnlab .tab .n{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-right:5px}
+.nnlab .tab.on .n{color:var(--hot)}
+.nnlab .panel{display:none}
+.nnlab .panel.show{display:block;animation:fade .35s}
+.nnlab .panel h2{font-family:var(--sans);font-weight:800;font-size:19px;margin:0 0 6px;letter-spacing:0;text-transform:none;color:var(--ink)}
+.nnlab .panel p{color:var(--ink-dim);font-size:14.5px;max-width:none;margin:0 0 12px}
+.nnlab .flow-svg{width:100%;height:auto;display:block;touch-action:none;margin:6px 0}
+.nnlab .nn-node{transition:fill .45s,filter .45s}
+.nnlab .nn-val{font-family:var(--mono);font-size:10px;fill:var(--ink-dim);pointer-events:none}
+.nnlab .nn-emoji{font-size:20px}
+.nnlab .lay-label{font-family:var(--sans);font-size:12px;fill:var(--ink-faint);font-weight:600}
+.nnlab .edge-w{font-family:var(--mono);font-size:11px;fill:var(--cold2)}
+.nnlab .ctrl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0}
+.nnlab .net-layout{display:grid;grid-template-columns:190px 1fr;gap:18px;align-items:start}
+@media(max-width:760px){.nnlab .net-layout{grid-template-columns:1fr}}
+.nnlab .gridwrap{text-align:center}
+.nnlab .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;width:170px;margin:0 auto 12px;padding:8px;background:var(--bg3);border:1px solid var(--line2);border-radius:12px}
+.nnlab .px{aspect-ratio:1;border-radius:4px;background:#0c1018;border:1px solid var(--line);cursor:pointer;transition:.1s}
+.nnlab .px.on{background:linear-gradient(135deg,var(--hot),var(--hot2));border-color:transparent}
+.nnlab .glabel{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-bottom:8px}
+.nnlab .verdict{margin-top:8px}
+.nnlab .vtitle{font-size:16px;font-weight:700;margin-bottom:10px;color:var(--ink)}
+.nnlab .vconf{color:var(--ink-faint);font-size:13px;font-weight:500}
+.nnlab .vbar{position:relative;height:26px;background:var(--bg3);border:1px solid var(--line2);border-radius:8px;overflow:hidden;margin:7px 0}
+.nnlab .vbar span{position:absolute;top:0;bottom:0;right:0;display:block;border-radius:8px;transition:width .6s}
+.nnlab .vbar label{position:relative;z-index:1;display:block;line-height:26px;padding:0 10px;font-family:var(--mono);font-size:12px;color:var(--ink)}
+.nnlab .vhint{font-family:var(--mono);font-size:12px;color:var(--ink-faint);line-height:1.7}
+.nnlab .sliders{display:grid;gap:11px;margin:12px 0}
+.nnlab .srow{display:grid;grid-template-columns:80px 1fr 30px;gap:10px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--ink-dim)}
+.nnlab input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:99px;background:var(--bg3);border:1px solid var(--line);outline:none}
+.nnlab input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--hot);cursor:pointer;border:2px solid var(--bg)}
+.nnlab input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--hot);cursor:pointer;border:2px solid var(--bg)}
+.nnlab .readout{font-family:var(--sans);font-size:14px;color:var(--ink);background:var(--bg3);border:1px solid var(--line2);border-radius:10px;padding:11px 14px;margin-top:8px}
+.nnlab .readout b{color:var(--hot2);font-family:var(--mono)}
+.nnlab .statrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:14px 0}
+.nnlab .ls{border:1px solid var(--line2);border-radius:10px;padding:10px 12px;background:var(--bg3)}
+.nnlab .lsv{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--hot2)}
+.nnlab .lsk{font-size:11px;color:var(--ink-faint);margin-top:3px;font-family:var(--mono)}
+.nnlab #loss{width:100%;height:80px;display:block;background:var(--bg3);border:1px solid var(--line2);border-radius:10px;margin-top:6px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="tb-btn menu-btn" id="menuBtn">☰</button>
+  <div class="brand">
+    <div class="glyph">G</div>
+    <div><b>ساخت GPT</b><small>از صفر · قدم‌به‌قدم با هوش مصنوعی</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="progress-mini"><span class="lbl">پیشرفت</span>
+    <div class="track"><div class="fill" id="topFill"></div></div>
+    <span id="topPct">۰٪</span>
+  </div>
+  <button class="tb-btn" id="reportBtn">کارنامه</button>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="shell">
+  <nav class="sidebar" id="sidebar">
+    <h4>نقشه‌ی راه</h4>
+    <div id="lessonList"></div>
+  </nav>
+  <main class="main" id="main"></main>
+</div>
+<footer class="foot">
+  یک همراهِ تعاملی برای یادگیریِ ساختِ GPT، با الهام از درس‌گفتارِ اندری کارپاتی «بیا GPT را از صفر بسازیم». همه‌ی توضیح‌ها بازنویسیِ ساده و مفهومی‌اند — هر ویجت را دستکاری کن و یاد بگیر.
+</footer>
+
+<script>
+const $ = (s,r=document)=>r.querySelector(s);
+const elt=(tag,cls,html)=>{const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e;};
+
+/* affinity color: t in [0,1] -> cool/dim (low) to warm/bright (high) */
+function affColor(t){
+  t=Math.max(0,Math.min(1,t));
+  const cold=[54,214,194], hot=[255,154,82];
+  const r=Math.round(cold[0]+(hot[0]-cold[0])*t);
+  const g=Math.round(cold[1]+(hot[1]-cold[1])*t);
+  const b=Math.round(cold[2]+(hot[2]-cold[2])*t);
+  const a=(0.14+0.86*t).toFixed(3);
+  return `rgba(${r},${g},${b},${a})`;
+}
+function softmax(arr){
+  const m=Math.max(...arr.filter(v=>isFinite(v)));
+  const ex=arr.map(v=>isFinite(v)?Math.exp(v-m):0);
+  const s=ex.reduce((a,b)=>a+b,0)||1;
+  return ex.map(v=>v/s);
+}
+const fmt=(n,d=2)=>Number(n).toFixed(d);
+
+/* =========================================================================
+   محتوای درس‌ها — هر قدم: id, num, title, sub, html, widget, quiz
+   ========================================================================= */
+const LESSONS = [
+{
+  id:"overview", num:"00", title:"قراره دقیقاً <em>چی</em> بسازیم؟",
+  sub:"قبل از کد، نقشه‌ی راه: از ChatGPT تا همان یک ایده‌ای که پشتِ همه‌چیز است.",
+  html:`
+    <p class="lead">ChatGPT شبیهِ جادوست، ولی در باطن فقط یک شبکه‌ی عصبی است که بارها و بارها «بعدی چه می‌آید» را حدس می‌زند، از روی چیزی که تا اینجا نوشته شده. هر بار هم یک سؤال را دو بار بپرسی، جوابش کمی فرق می‌کند؛ چون این سیستم احتمالاتی است و از بینِ گزینه‌های ممکن، یکی را شانسی برمی‌دارد.</p>
+    <p>اسمِ این شبکه Transformer است (از مقاله‌ی معروفِ ۲۰۱۷ به نامِ «Attention Is All You Need»). همین که در طولِ این مسیر می‌سازیم، یک نسخه‌ی کوچک ولی واقعی از همان است: مدلی که حرف‌به‌حرف، متنِ تازه تولید می‌کند.</p>
+    <div class="note hot"><div class="nh">کلِ ماجرا در یک جمله</div><p>به یک شبکه یاد بده با دیدنِ حرف‌های قبلی، حرفِ بعدی را حدس بزند. همین کارِ ساده را به‌قدرِ کافی خوب و در مقیاسِ بزرگ انجام بده — و «حدسِ بعدی» کم‌کم تبدیل می‌شود به نوشتن، استدلال و گفت‌وگو.</p></div>
+    <p>قرار نیست ریاضیِ سنگین یا کدِ پیچیده یاد بگیریم. قرار است بفهمیم در هر قدم <strong>چه اتفاقی</strong> می‌افتد و <strong>چرا</strong>؛ بعد همان را قدم‌به‌قدم با کمکِ هوشِ مصنوعی پیاده می‌کنیم.</p>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«بیا با هم یک مدلِ زبانیِ کوچک از صفر بسازیم که حرف‌به‌حرف متن تولید کند. قدم‌به‌قدم پیش برو و هر مرحله را ساده برایم توضیح بده.»</p></div>
+    <h3>مسیرِ ما</h3>
+    <p>هشت ایستگاه تو را از یک متنِ خام تا یک ترنسفورمرِ کارکُن می‌برد، و در آخر می‌بینیم یک مدلِ پایه چطور تبدیل به دستیاری مثل ChatGPT می‌شود. روی هر ایستگاه در نقشه بزن تا بپری همان‌جا — ولی هر قدم روی قدمِ قبلی بنا شده.</p>
+  `,
+  widget:"roadmap",
+  quiz:[
+    {q:"چرا ChatGPT به یک سؤالِ تکراری جواب‌های متفاوت می‌دهد؟", options:["ایراد دارد","از روی یک توزیعِ احتمال، گزینه‌ی بعدی را شانسی برمی‌دارد","هر بار اینترنت را جستجو می‌کند","اعداد را جور دیگری گرد می‌کند"], correct:1, why:"یک مدلِ زبانی برای گزینه‌های بعدی یک <b>توزیعِ احتمال</b> می‌سازد و از رویش نمونه برمی‌دارد. نمونه‌های متفاوت ← جواب‌های متفاوت ولی منطقی. این رفتار از پایه احتمالاتی است."},
+    {q:"GPT به‌زبانِ ساده چه کار می‌کند؟", options:["یک مرورگر است","یک ترنسفورمر است که از قبل روی متنِ زیاد آموزش دیده و متن تولید می‌کند","یک پایگاهِ داده است","یک ماشین‌حساب است"], correct:1, why:"GPT یعنی Generative Pre-trained Transformer: یک ترنسفورمر که اول روی حجمِ عظیمی متن آموزش دیده، و کارش تولیدِ متن (حدسِ توکنِ بعدی) است."}
+  ]
+},
+{
+  id:"langmodel", num:"01", title:"مدلِ زبانی یعنی <em>حدسِ بعدی</em>",
+  sub:"کاری که مدل می‌کند فقط یک چیز است: بعدی چه می‌آید؟",
+  html:`
+    <p class="lead">یک مدلِ زبانی فقط یک کار بلد است: به متنِ تا اینجا نگاه می‌کند و حدس می‌زند <strong>بعدی چه می‌آید</strong>. ولی جوابش یک گزینه‌ی قطعی نیست؛ برای هر گزینه‌ی ممکن یک «احتمال» می‌دهد.</p>
+    <p>مثال بزنیم: «پادشاه ___». مدل نمی‌گوید حتماً «مُرد». می‌گوید شاید «مُرد» با احتمالِ ۲۷٪، شاید «اینجاست» با ۲۳٪، شاید «رفته» با ۱۹٪ و... بعد از روی همین احتمال‌ها، یکی را شانسی برمی‌دارد.</p>
+    <div class="note"><div class="nh">چرا شانسی؟</div><p>چون اگر همیشه پرتکرارترین گزینه را برمی‌داشت، متن‌ها خشک، قابلِ‌پیش‌بینی و تکراری می‌شدند. نمونه‌برداری از روی احتمال‌هاست که به متن، تنوع و طبیعی‌بودن می‌دهد.</p></div>
+    <p>پس قدمِ اولِ ذهنی این است: مدل = یک ماشینِ حدسِ بعدی که خروجی‌اش احتمال است، نه قطعیت. هرچیزِ دیگری که می‌سازیم، فقط برای این است که این حدس را <em>بهتر</em> کند.</p>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«یک تابعِ ساده بنویس که چند گزینه‌ی ممکنِ بعدی را با احتمال‌هایشان بگیرد و متناسب با همان احتمال‌ها، یکی را به‌صورتِ تصادفی انتخاب کند.»</p></div>
+  `,
+  widget:"sampler",
+  quiz:[
+    {q:"خروجیِ اصلیِ یک مدلِ زبانی چیست؟", options:["یک کلمه‌ی قطعی","یک احتمال برای هر گزینه‌ی ممکنِ بعدی","یک عددِ صحیح","یک تصویر"], correct:1, why:"مدل برای گزینه‌های بعدی یک <b>توزیعِ احتمال</b> می‌دهد؛ بعد از روی آن نمونه برمی‌دارد. خروجی، احتمال است نه یک جوابِ قطعی."},
+    {q:"چرا گزینه‌ی بعدی را شانسی برمی‌داریم، نه همیشه پرتکرارترین را؟", options:["چون سریع‌تر است","برای تنوع و طبیعی‌بودنِ متن","چون اجباری است","برای صرفه‌جویی در حافظه"], correct:1, why:"همیشه گرفتنِ پرتکرارترین گزینه، متن را خشک و تکراری می‌کند. نمونه‌برداریِ احتمالاتی، خلاقیت و تنوع می‌آورد."}
+  ]
+},
+{
+  id:"tokenize", num:"02", title:"از <em>متن</em> تا عدد",
+  sub:"کامپیوتر حرف نمی‌فهمد؛ فقط عدد. اول باید متن را به عدد ترجمه کنیم.",
+  html:`
+    <p class="lead">شبکه‌ی عصبی با حرف و کلمه کاری ندارد؛ فقط با <strong>عدد</strong> کار می‌کند. پس اولین قدمِ عملی این است که هر حرف را به یک عدد نسبت بدهیم. به این کار می‌گویند توکن‌سازی (tokenize).</p>
+    <p>ساده‌ترین راه، حرف‌به‌حرف است: هر حرف یک عدد. اگر مثلاً کلِ حرف‌های ممکن ۶۵ تا باشد، هر حرف عددی بینِ ۰ تا ۶۴ می‌گیرد. در آخرِ کار هم برعکس: عدد ← حرف، تا خروجیِ مدل دوباره خوانا شود.</p>
+    <p>راهِ حرفه‌ای‌تر (همان چیزی که GPT استفاده می‌کند) تکه‌کلمه‌ها (sub-word) است: به‌جای تکِ‌تکِ حرف‌ها، تکه‌های پرتکرارِ کلمات را یک توکن حساب می‌کند. این‌طوری <strong>تعدادِ توکن‌ها</strong> در یک جمله کم می‌شود، ولی در عوض <strong>تعدادِ توکن‌های ممکن</strong> خیلی زیاد (ده‌ها هزار).</p>
+    <div class="note"><div class="nh">برای ما</div><p>برای سادگی حرف‌به‌حرف می‌رویم. مفهوم در هر دو حالت یکی است: متن ← عدد، و دوباره عدد ← متن.</p></div>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«یک توکنایزرِ ساده‌ی حرف‌به‌حرف بساز: هر حرفِ یکتا را به یک عدد نگاشت کن، و یک تابعِ برعکس هم بگذار که عددها را به متن برگرداند.»</p></div>
+  `,
+  widget:"tokenizer",
+  quiz:[
+    {q:"چرا اول باید متن را عدد کنیم؟", options:["برای زیبایی","چون شبکه‌ی عصبی فقط با عدد کار می‌کند","برای فشرده‌سازی","برای رمزگذاری"], correct:1, why:"مدل ورودی‌اش باید عدد باشد. توکن‌سازی، پُلِ بینِ متنِ آدم‌ها و دنیای عددیِ شبکه است."},
+    {q:"فرقِ حالتِ حرف‌به‌حرف با تکه‌کلمه‌ای چیست؟", options:["هیچ فرقی ندارند","حرفی: نمادهای ممکنِ کم ولی دنباله‌ی بلند؛ تکه‌کلمه‌ای: برعکس","حرفی فقط برای انگلیسی است","تکه‌کلمه‌ای همیشه کندتر است"], correct:1, why:"در حالتِ حرفی تعدادِ نمادهای ممکن کم است ولی طولِ دنباله زیاد می‌شود؛ در حالتِ تکه‌کلمه‌ای تعدادِ توکن‌های ممکن زیاد ولی دنباله کوتاه‌تر است."}
+  ]
+},
+{
+  id:"bigram", num:"03", title:"ساده‌ترین مدل: فقط <em>حرفِ قبلی</em>",
+  sub:"اولین تلاش: حرفِ بعدی را فقط از روی یک حرفِ قبل حدس بزن. ببینیم چقدر ضعیف است.",
+  html:`
+    <p class="lead">بیایید ساده‌ترین مدلِ ممکن را بسازیم تا یک نقطه‌ی شروع داشته باشیم: برای حدسِ حرفِ بعدی، <strong>فقط به یک حرفِ قبل</strong> نگاه کن. اسمِ این مدل bigram است.</p>
+    <p>کارش این است: از رویِ یک متنِ تمرینی می‌شمارد که بعد از هر حرف، معمولاً چه حرفی آمده. بعد موقعِ تولید می‌گوید «بعد از این حرف، با این احتمال‌ها فلان حرف می‌آید» و یکی را برمی‌دارد. همین. نه قاعده‌ای، نه فکری.</p>
+    <p>مشکل کجاست؟ این مدل <strong>حافظه ندارد</strong>. حرفِ بعدی را فقط از روی آخرین حرف می‌سازد و کلِ متنِ قبل را نادیده می‌گیرد. نتیجه یک مشت حرفِ به‌هم‌چسبیده است که <em>شکلِ</em> کلمه دارد ولی معنی ندارد.</p>
+    <div class="note hot"><div class="nh">دقیقاً همین ضعف</div><p>این ناتوانی در دیدنِ گذشته، همان چیزی است که در قدمِ بعد حلش می‌کنیم. مدل باید بتواند به <strong>همه‌ی</strong> حرف‌های قبلی نگاه کند، نه فقط آخری.</p></div>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«یک مدلِ bigram بساز که فقط با شمردنِ این‌که بعد از هر حرف چه حرفی آمده، حرفِ بعدی را حدس بزند. بعد بگذار چند خط متن تولید کند تا ضعفش را با چشمِ خودم ببینم.»</p></div>
+  `,
+  widget:"bigram",
+  quiz:[
+    {q:"مدلِ bigram برای حدسِ حرفِ بعدی به چه چیزی نگاه می‌کند؟", options:["کلِ جمله","فقط یک حرفِ قبل","به هیچ‌چی","به کلمه‌ی بعدی"], correct:1, why:"bigram فقط آخرین حرف را می‌بیند و از روی آن، حرفِ بعدی را حدس می‌زند. به بقیه‌ی متن کاری ندارد."},
+    {q:"چرا متنِ این مدل بی‌معنی درمی‌آید؟", options:["کم آموزش دیده","چون حافظه‌ی متن ندارد و فقط آخرین حرف را می‌بیند","چون فارسی سخت است","چون کند است"], correct:1, why:"بدونِ نگاه به گذشته، هیچ ساختاری در جمله ساخته نمی‌شود؛ خروجی فقط دنباله‌ای از حرف‌هاست که محلی به‌هم می‌خورند."}
+  ]
+},
+{
+  id:"neural", num:"04", title:"شبکه‌ی عصبی <em>چطور</em> کار می‌کند",
+  sub:"یک قدم عقب‌تر: آن «ماشینی» که این حدس‌ها را می‌زند، از چه ساخته شده؟",
+  html:`
+    <p class="lead">تا این‌جا گفتیم مدل «حرفِ بعدی را حدس می‌زند». ولی این حدس را چه چیزی می‌زند؟ یک «شبکه‌ی عصبی». بیایید یک قدم عقب برویم و ببینیم خودِ این شبکه از چه ساخته شده و چطور کار می‌کند.</p>
+    <p>هسته‌ی همه‌چیز یک واحدِ کوچک است به نامِ «نورون»: چند ورودی می‌گیرد، هرکدام را در یک «وزن» ضرب می‌کند، همه را جمع می‌کند و نتیجه را فشرده می‌کند. هزاران نورون که در «لایه‌ها» کنارِ هم بچینی، می‌شود شبکه‌ای که می‌تواند کارهای پیچیده‌ای مثلِ تشخیصِ سگ از گربه را یاد بگیرد.</p>
+    <div class="note hot"><div class="nh">در آزمایشگاهِ پایین</div><p>یک شبکه‌ی واقعی و کوچک ساخته‌ام که همین‌جا در مرورگرت آموزش می‌بیند. می‌توانی داده را ببینی که لایه‌به‌لایه جلو می‌رود، تماشا کنی چطور یاد می‌گیرد، و در آخر به همان «هشت نودِ» درس‌گفتار وصلش کنی.</p></div>
+    <p>چهار صحنه دارد: <strong>یک نورون</strong> ← <strong>یک شبکه که سگ/گربه تشخیص می‌دهد</strong> ← <strong>چطور یاد می‌گیرد</strong> ← <strong>هشت نود و پلش به توجه</strong>. با همین، آماده‌ای برای قدمِ بعد که قلبِ ماجراست.</p>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«یک شبکه‌ی عصبیِ کوچک با چند لایه بساز که از روی یک تصویرِ ساده تشخیص بدهد سگ است یا گربه، و توضیح بده در هر لایه چه اتفاقی می‌افتد.»</p></div>
+  `,
+  widget:"neural",
+  quiz:[
+    {q:"کوچک‌ترین واحدِ یک شبکه‌ی عصبی چیست و چه می‌کند؟", options:["یک پایگاهِ داده","یک «نورون»: ورودی‌ها را در وزن‌ها ضرب، جمع و فشرده می‌کند","یک مرورگر","یک حافظه"], correct:1, why:"نورون چند ورودی می‌گیرد، هرکدام را در یک وزن ضرب می‌کند، جمع می‌کند و نتیجه را فشرده می‌کند. شبکه از هزاران نورونِ این‌شکلی ساخته شده."},
+    {q:"«یادگیری» در یک شبکه یعنی چه؟", options:["اضافه‌کردنِ لایه‌ی بیشتر","پیداکردنِ وزن‌هایی که خطا را کم می‌کنند","سریع‌تر اجرا شدن","پاک‌کردنِ داده"], correct:1, why:"آموزش یعنی تکرارِ حلقه‌ی «حدس بزن ← خطا را بسنج ← وزن‌ها را کمی اصلاح کن»، تا شبکه کم‌کم درست جواب بدهد."},
+    {q:"شبکه چطور از یک تصویر به جوابِ «سگ» یا «گربه» می‌رسد؟", options:["یک‌باره","داده لایه‌به‌لایه از ورودی تا خروجی جلو می‌رود و آخر به هر گزینه یک احتمال می‌دهد","با جستجوی اینترنت","تصادفی"], correct:1, why:"داده از لایه‌ی ورودی شروع می‌کند، در هر لایه نورون‌ها پردازشش می‌کنند، و لایه‌ی آخر برای هر گزینه (سگ/گربه) یک احتمال می‌دهد."}
+  ]
+},
+{
+  id:"attention", num:"05", title:"کلیدِ ماجرا: <em>توجه</em> به گذشته",
+  sub:"حالا به مدل «خودآگاهی» می‌دهیم: هر حرف یاد می‌گیرد به حرف‌های مهمِ قبلی نگاه کند.",
+  html:`
+    <p class="lead">این مهم‌ترین قدمِ کلِ مسیر است. مشکلِ مدلِ قبلی این بود که فقط آخرین حرف را می‌دید. حالا قابلیتی اضافه می‌کنیم به نامِ توجه (attention) — یا همان «خودآگاهیِ» مدل نسبت به متنِ خودش.</p>
+    <p>ایده ساده است: هر موقعیت در جمله، به موقعیت‌های <strong>قبلی</strong> نگاه می‌کند و تصمیم می‌گیرد به کدام‌ها بیشتر اهمیت بدهد. مثلاً در «گربه روی فرش نشست»، وقتی به «نشست» می‌رسیم، مهم است که بدانیم فاعل «گربه» بوده — پس «نشست» باید به «گربه» توجهِ زیادی کند.</p>
+    <p>چطور؟ هر کلمه دو چیز می‌سازد: یک <strong>پرسش</strong> (دنبالِ چه می‌گردم؟) و یک <strong>کلید</strong> (من چه چیزی برای عرضه دارم؟). هرجا پرسشِ یک کلمه با کلیدِ کلمه‌ای دیگر جور دربیاید، توجه بینشان زیاد می‌شود.</p>
+    <div class="note"><div class="nh">یک میانگینِ هوشمند</div><p>در عمل، هر موقعیت اطلاعاتِ موقعیت‌های قبلی را با وزنِ متفاوت با هم قاطی می‌کند. کلماتِ مهم‌تر، وزنِ بیشتری می‌گیرند. این فرقِ بزرگ با bigram است که همه‌چیز جز آخرین حرف را دور می‌ریخت.</p></div>
+    <p>یک نکته‌ی ظریف: چون داریم متن <em>تولید</em> می‌کنیم، هر کلمه فقط حق دارد به گذشته نگاه کند، نه آینده. آینده هنوز نوشته نشده. (این همان «ماسکِ گذشته» است که در قدمِ بعد می‌بینیمش.)</p>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«به مدل قابلیتِ self-attention اضافه کن تا هر موقعیت بتواند به موقعیت‌های قبلیِ مهم‌تر وزنِ بیشتری بدهد؛ و طوری ماسکش کن که فقط به گذشته نگاه کند، نه آینده.»</p></div>
+  `,
+  widget:"attention",
+  quiz:[
+    {q:"توجه (attention) چه مشکلی را حل می‌کند؟", options:["سرعت","این‌که مدل به‌جای فقط آخرین حرف، بتواند به همه‌ی حرف‌های قبل نگاه کند","کمبودِ حافظه‌ی سخت‌افزار","گرافیک"], correct:1, why:"توجه به مدل اجازه می‌دهد کلِ گذشته را ببیند و روی بخش‌های مهم‌ترش تمرکز کند — دقیقاً همان چیزی که bigram کم داشت."},
+    {q:"هر موقعیت چه چیزهایی می‌سازد تا «میزانِ توجه» حساب شود؟", options:["فقط یک عدد","یک «پرسش» و یک «کلید» که با هم مقایسه می‌شوند","یک تصویر","یک رنگ"], correct:1, why:"هر موقعیت یک پرسش و یک کلید می‌سازد. شباهتِ پرسشِ یکی با کلیدِ دیگری تعیین می‌کند چقدر به آن توجه شود."},
+    {q:"چرا هر کلمه فقط به گذشته نگاه می‌کند نه آینده؟", options:["برای سرعت","چون داریم متن تولید می‌کنیم و آینده هنوز نوشته نشده","محدودیتِ حافظه","یک قانونِ ریاضی"], correct:1, why:"موقعِ تولید، کلمه‌ی بعدی هنوز وجود ندارد. پس مدل حق ندارد به آینده نگاه کند؛ به این کار «ماسکِ گذشته» (causal) می‌گویند."}
+  ]
+},
+{
+  id:"notes", num:"06", title:"فقط <em>گذشته</em>، نه آینده",
+  sub:"یک نگاهِ تصویری: چه کسی اجازه دارد به چه کسی نگاه کند.",
+  html:`
+    <p class="lead">بیایید همان ایده‌ی «نگاه به گذشته» را به‌شکلِ یک شبکه از نقطه‌ها ببینیم. هر نقطه یک موقعیت در متن است، و خط‌ها نشان می‌دهند چه کسی به چه کسی نگاه می‌کند.</p>
+    <p>در حالتِ تولیدِ متن (که اسمش decoder است): هر نقطه فقط به <strong>خودش و نقطه‌های قبلی</strong> وصل است. این همان ماسکِ گذشته است — جلوی نگاه‌کردن به آینده گرفته شده.</p>
+    <p>یک حالتِ دیگر هم هست (encoder): وقتی کلِ متن از قبل معلوم است — مثلاً برای ترجمه یا دسته‌بندیِ یک جمله — هر نقطه می‌تواند به همه نگاه کند، چه قبل چه بعد.</p>
+    <div class="note"><div class="nh">دو خانواده</div><p>GPT از نوعِ decoder است، چون قدم‌به‌قدم و رو به جلو تولید می‌کند. مدل‌هایی مثل BERT از نوعِ encoder هستند، چون کلِ جمله را یک‌جا می‌بینند.</p></div>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«فرقِ ماسکِ decoder و encoder را برایم توضیح بده، و این‌که چرا یک مدلِ تولیدِ متن مثلِ GPT باید فقط از نوعِ decoder باشد و به آینده نگاه نکند.»</p></div>
+  `,
+  widget:"graph",
+  quiz:[
+    {q:"در حالتِ decoder، هر موقعیت به چه چیزی دسترسی دارد؟", options:["به همه","فقط به خودش و موقعیت‌های قبلی","فقط به آینده","به هیچ‌کدام"], correct:1, why:"decoder ماسکِ گذشته دارد: هر موقعیت فقط خودش و قبلی‌ها را می‌بیند تا موقعِ تولید، تقلب از روی آینده ممکن نباشد."},
+    {q:"GPT از کدام نوع است؟", options:["encoder","decoder","هیچ‌کدام","هر دو هم‌زمان"], correct:1, why:"GPT یک مدلِ decoder-only است، چون کارش تولیدِ رو به جلوی متن، توکن‌به‌توکن، است."}
+  ]
+},
+{
+  id:"transformer", num:"07", title:"سرهم‌کردنِ <em>مدلِ کامل</em>",
+  sub:"حالا تکه‌ها را روی هم می‌چینیم تا یک ترنسفورمرِ واقعی بشود.",
+  html:`
+    <p class="lead">تا اینجا قطعه‌ها را داریم. حالا می‌چینیمشان روی هم تا مسیرِ یک متن از ورودی تا خروجی کامل شود.</p>
+    <p>اول هر حرف به عدد تبدیل می‌شود و کنارش یک <strong>نشانه‌ی موقعیت</strong> می‌گیرد — تا مدل بداند ترتیبِ کلمات مهم است. (نکته‌ی مهم: توجه به‌تنهایی ترتیب را نمی‌فهمد؛ این نشانه‌ی موقعیت است که جای هر کلمه را مشخص می‌کند.)</p>
+    <p>بعد چند <strong>بلوک</strong> پشتِ‌سرِ هم می‌آیند. در هر بلوک دو کار انجام می‌شود: اول کلمه‌ها با هم <strong>حرف می‌زنند</strong> (همان توجه)، بعد هرکدام جداگانه کمی <strong>فکر می‌کنند</strong> (یک شبکه‌ی کوچک رویِ هر موقعیت). هرچه بلوک‌ها بیشتر، مدل عمیق‌تر و باهوش‌تر.</p>
+    <p>دو اسمِ فنی هم هست که فقط کافی است بشناسی‌شان: <strong>residual</strong> یک «راهِ میان‌بر» است که یادگیریِ شبکه‌های عمیق را ممکن می‌کند، و <strong>LayerNorm</strong> یک نرمال‌سازی است که اعداد را رام و متعادل نگه می‌دارد.</p>
+    <p>آخرِ سر، مدل برای هر موقعیت به هر حرفِ ممکن یک «امتیاز» می‌دهد؛ این امتیازها با softmax به احتمال تبدیل می‌شوند و حرفِ بعدی انتخاب می‌شود. حلقه دوباره تکرار می‌شود.</p>
+    <div class="note"><div class="nh">امتحانش کن</div><p>روی هر لایه در نمودارِ پایین بزن تا ببینی دقیقاً چه کار می‌کند و چرا آنجاست.</p></div>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«همه‌ی قطعه‌ها را در یک ترنسفورمرِ کامل کنارِ هم بگذار: تبدیلِ حرف به عدد و نشانه‌ی موقعیت، چند بلوکِ توجه و شبکه‌ی کوچک با residual و LayerNorm، و یک لایه‌ی آخر برای حدسِ حرفِ بعدی.»</p></div>
+  `,
+  widget:"architecture",
+  quiz:[
+    {q:"چرا به «نشانه‌ی موقعیت» نیاز داریم؟", options:["برای رنگ","چون توجه به‌تنهایی ترتیبِ کلمه‌ها را نمی‌فهمد","برای سرعت","لازم نیست"], correct:1, why:"مکانیزمِ توجه ذاتاً به ترتیب بی‌اعتنا است. نشانه‌ی موقعیت به مدل می‌گوید هر کلمه کجای جمله است."},
+    {q:"در هر بلوک، ترتیبِ کارها چیست؟", options:["اول فکر، بعد حرف‌زدن","اول حرف‌زدن (توجه)، بعد فکرِ جداگانه‌ی هر موقعیت","فقط توجه","فقط شبکه‌ی کوچک"], correct:1, why:"هر بلوک = ارتباط (توجه: کلمه‌ها با هم حرف می‌زنند) و بعد محاسبه (یک شبکه‌ی کوچک که رویِ هر موقعیت جداگانه فکر می‌کند)."}
+  ]
+},
+{
+  id:"chatgpt", num:"08", title:"بزرگ‌تر، و تبدیل به <em>ChatGPT</em>",
+  sub:"همین کد، فقط خیلی بزرگ‌تر؛ بعد چند مرحله تا دستیار شدن.",
+  html:`
+    <p class="lead">مدلِ ما کوچک است (حدودِ ۱۰ میلیون پارامتر). نکته‌ی جالب این‌جاست که برای رسیدن به چیزی مثل GPT-3، <strong>همین معماری</strong> را خیلی بزرگ‌تر می‌کنند: لایه‌های بیشتر، داده‌ی بیشتر، محاسبه‌ی بیشتر. ساختار تقریباً همان است که الان فهمیدی.</p>
+    <p>ولی یک مدلِ بزرگ که فقط «حرفِ بعدی» را حدس می‌زند، هنوز ChatGPT نیست. این مدل متن را <em>ادامه</em> می‌دهد، اما لزوماً به دستورِ تو گوش نمی‌دهد. برای دستیار شدن، چند مرحله‌ی دیگر لازم است:</p>
+    <ul>
+      <li><strong>۱) پیش‌آموزش:</strong> همین کاری که ساختیم، رویِ حجمِ عظیمی متن. بیشترِ دانشِ مدل این‌جا جمع می‌شود.</li>
+      <li><strong>۲) تنظیم با نمونه (SFT):</strong> آموزشِ بیشتر رویِ نمونه‌های «سؤال ← جوابِ خوب» که آدم‌ها نوشته‌اند، تا مدل لحنِ یک دستیار را یاد بگیرد.</li>
+      <li><strong>۳) مدلِ پاداش:</strong> آدم‌ها چند جوابِ مدل را از بهتر به بدتر رتبه می‌دهند؛ یک مدلِ جدا یاد می‌گیرد این سلیقه را به‌صورتِ یک امتیاز پیش‌بینی کند.</li>
+      <li><strong>۴) RLHF:</strong> مدل را طوری تنظیم می‌کنند که جواب‌هایی بدهد که مدلِ پاداش امتیازِ بالا می‌دهد. همین مرحله است که GPT را تبدیل به ChatGPT می‌کند.</li>
+    </ul>
+    <div class="note"><div class="nh">نسبت‌ها</div><p>پیش‌آموزش بیش از ۹۹٪ِ کلِ محاسبه است و همان چیزی است که در این دوره ساختیم. سه مرحله‌ی بعدی کوچک‌اند، ولی همان‌ها مدل را «حرف‌گوش‌کن» می‌کنند.</p></div>
+    <div class="aiprompt"><div class="ah">💬 به دستیارِ هوش مصنوعی بگو</div><p>«مسیرِ تبدیلِ یک مدلِ پایه به یک دستیار را قدم‌به‌قدم برایم خلاصه کن: پیش‌آموزش، تنظیم با نمونه (SFT)، مدلِ پاداش، و RLHF.»</p></div>
+  `,
+  widget:"scale",
+  quiz:[
+    {q:"برای رسیدن از مدلِ ما به GPT-3، عمدتاً چه چیزی لازم است؟", options:["یک معماریِ کاملاً جدید","همان معماری، ولی خیلی بزرگ‌تر و با داده‌ی بیشتر","یک زبانِ برنامه‌نویسیِ دیگر","فقط یک سخت‌افزارِ خاص"], correct:1, why:"شگفتیِ ترنسفورمر همین است: همان ساختار، فقط با مقیاسِ بزرگ‌تر (پارامتر، داده، محاسبه)، تا میلیاردها پارامتر بالا می‌رود."},
+    {q:"کدام مرحله مدلِ پایه را به یک دستیارِ حرف‌گوش‌کن تبدیل می‌کند؟", options:["فقط پیش‌آموزش","مراحلِ تنظیم و RLHF بعد از پیش‌آموزش","توکن‌سازی","صرفاً بزرگ‌ترکردن"], correct:1, why:"پیش‌آموزش دانش می‌دهد، ولی این SFT و مدلِ پاداش و RLHF است که مدل را به یک دستیارِ مطیعِ دستور تبدیل می‌کند."}
+  ]
+}
+];
+
+const state={ current:0, view:"lesson", results:{} /* id -> {correct,total,missed:[idx],answers:[]} */ };
+
+/* ---------- progress ---------- */
+function totals(){
+  let c=0,t=0;
+  LESSONS.forEach(L=>{ const r=state.results[L.id]; t+=L.quiz.length; if(r)c+=r.correct; });
+  return {c,t,pct: t? Math.round(100*c/t):0};
+}
+function updateProgress(){
+  const {pct}=totals();
+  $("#topFill").style.width=pct+"%";
+  $("#topPct").textContent=pct+"٪";
+}
+
+/* ---------- sidebar ---------- */
+function renderSidebar(){
+  const box=$("#lessonList"); box.innerHTML="";
+  LESSONS.forEach((L,i)=>{
+    const r=state.results[L.id];
+    const done = r && r.answeredAll;
+    const b=elt("button","lesson-link"+(i===state.current&&state.view==="lesson"?" active":"")+(done?" done":""));
+    b.innerHTML=`<span class="ll-num"><span>${L.num}</span></span>
+      <span class="ll-meta"><span class="ll-title">${L.title.replace(/<\/?em>/g,"")}</span>
+      <span class="ll-sub">${r? r.correct+" از "+L.quiz.length+" درست" : L.quiz.length+" پرسش"}</span></span>`;
+    b.onclick=()=>go(i);
+    box.appendChild(b);
+  });
+}
+
+/* ---------- main lesson render ---------- */
+function go(i){ state.current=i; state.view="lesson"; renderLesson(); renderSidebar(); window.scrollTo({top:0,behavior:"instant"}); closeDrawer(); }
+
+function renderLesson(){
+  const L=LESSONS[state.current];
+  const main=$("#main");
+  main.innerHTML=`
+    <div class="eyebrow"><span class="dot"></span> قدمِ ${L.num} · ${state.current+1} از ${LESSONS.length}</div>
+    <h1 class="title">${L.title}</h1>
+    <p class="subtitle">${L.sub}</p>
+    <div class="section-rule"></div>
+    <div class="content">${L.html}</div>
+    <div id="widgetMount"></div>
+    <div id="quizMount"></div>
+    <div id="navMount"></div>
+  `;
+  if(L.widget) mountWidget(L.widget, $("#widgetMount"));
+  renderQuiz(L, $("#quizMount"));
+  renderLessonNav($("#navMount"));
+  if(window.Prism) Prism.highlightAllUnder(main);
+}
+
+function renderLessonNav(host){
+  const i=state.current;
+  const prev=LESSONS[i-1], next=LESSONS[i+1];
+  host.className="lesson-nav";
+  host.innerHTML=`
+    <button class="lnav prev ${prev?'':'disabled'}">
+      <div class="lk">→ قبلی</div><div class="lt">${prev? 'قدمِ '+prev.num : '—'}</div></button>
+    <button class="lnav next ${next?'':'disabled'}">
+      <div class="lk">بعدی ←</div><div class="lt">${next? 'قدمِ '+next.num : 'پایانِ دوره'}</div></button>`;
+  if(prev) host.querySelector(".prev").onclick=()=>go(i-1);
+  if(next) host.querySelector(".next").onclick=()=>go(i+1);
+  else host.querySelector(".next").onclick=()=>showReport();
+}
+
+/* ---------- quiz with auto-advance ---------- */
+function renderQuiz(L, host){
+  const prior=state.results[L.id];
+  if(prior && prior.answeredAll){ renderQuizResult(L,host,prior); return; }
+  const Q={ idx:0, answers:new Array(L.quiz.length).fill(null) };
+
+  function paint(){
+    const q=L.quiz[Q.idx];
+    const keys=["۱","۲","۳","۴","۵"];
+    host.innerHTML=`
+      <div class="quiz">
+        <div class="quiz-head"><span class="qlabel">◇ خودت را بسنج</span>
+          <span class="qprog">پرسشِ ${Q.idx+1} / ${L.quiz.length}</span></div>
+        <div class="quiz-body">
+          <div class="qbar"><i style="width:${100*Q.idx/L.quiz.length}%"></i></div>
+          <div class="qtext">${q.q}</div>
+          <div class="qopts">${q.options.map((o,j)=>`<button class="qopt" data-j="${j}"><span class="key">${keys[j]}</span><span>${o}</span></button>`).join("")}</div>
+          <div class="qwhy"></div>
+        </div>
+      </div>`;
+    const opts=[...host.querySelectorAll(".qopt")];
+    const why=host.querySelector(".qwhy");
+    opts.forEach(btn=>btn.onclick=()=>{
+      const j=+btn.dataset.j; const correct=q.correct;
+      Q.answers[Q.idx]= (j===correct);
+      opts.forEach(b=>b.disabled=true);
+      opts[correct].classList.add("correct");
+      if(j!==correct) btn.classList.add("wrong");
+      why.classList.add("show");
+      const good=j===correct;
+      why.innerHTML=`<b>${good?"درست!":"نه دقیقاً."}</b> ${q.why}<span class="advancing">${Q.idx<L.quiz.length-1?"بریم بعدی…":"در حالِ نمره‌دادن…"}</span>`;
+      setTimeout(()=>{ Q.idx++; if(Q.idx<L.quiz.length) paint(); else finish(); }, good?1500:2500);
+    });
+  }
+  function finish(){
+    const correct=Q.answers.filter(Boolean).length;
+    const missed=[]; Q.answers.forEach((ok,k)=>{ if(!ok)missed.push(k); });
+    state.results[L.id]={correct,total:L.quiz.length,missed,answers:Q.answers.slice(),answeredAll:true};
+    updateProgress(); renderSidebar();
+    renderQuizResult(L,host,state.results[L.id]);
+  }
+  paint();
+}
+
+function ring(pct,size=92){
+  const r=size/2-8, c=2*Math.PI*r, off=c*(1-pct/100);
+  const col = pct>=80?"var(--good)": pct>=50?"var(--hot)":"var(--bad)";
+  return `<svg class="ring" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="var(--bg3)" stroke-width="8"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${col}" stroke-width="8"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"
+      transform="rotate(-90 ${size/2} ${size/2})" style="transition:stroke-dashoffset .8s"/>
+    <text x="50%" y="50%" text-anchor="middle" dy="0.35em" font-family="var(--mono)" font-weight="700"
+      font-size="22" fill="var(--ink)">${pct}٪</text></svg>`;
+}
+
+function renderQuizResult(L,host,r){
+  const pct=Math.round(100*r.correct/r.total);
+  const msg = pct===100 ? "بی‌نقص! این قدم را کامل گرفتی."
+           : pct>=80 ? "تسلطِ خوبی داری — چند نکته‌ی جزئی پایین هست."
+           : pct>=50 ? "شروعِ خوبی است. موارد مشخص‌شده را مرور کن."
+           : "یک دورِ دیگر می‌ارزد — مفهوم‌های پایین گیرت انداختند.";
+  const items=L.quiz.map((q,k)=>{
+    const ok=r.answers[k];
+    return `<div class="miss-item ${ok?'ok':''}"><b>${ok?'✓':'✗'} ${q.q}</b>${q.why}</div>`;
+  }).join("");
+  host.innerHTML=`
+    <div class="quiz"><div class="quiz-head"><span class="qlabel">◇ نتیجه‌ی این قدم</span></div>
+      <div class="qresult">
+        ${ring(pct)}
+        <h3>${r.correct} از ${r.total} درست</h3>
+        <p>${msg}</p>
+        <div class="ctrl-row" style="justify-content:center;margin-top:18px">
+          <button class="btn cold" id="retake">↺ دوباره امتحان کن</button>
+        </div>
+        <div class="miss-list">${items}</div>
+      </div>
+    </div>`;
+  host.querySelector("#retake").onclick=()=>{ delete state.results[L.id]; updateProgress(); renderSidebar(); renderQuiz(L,host); };
+}
+
+/* ---------- report view ---------- */
+function showReport(){ state.view="report"; renderReport(); renderSidebar(); window.scrollTo({top:0}); closeDrawer(); }
+function renderReport(){
+  const {c,t,pct}=totals();
+  const completed=LESSONS.filter(L=>state.results[L.id]&&state.results[L.id].answeredAll).length;
+  let weakest=null, weakPct=101;
+  LESSONS.forEach(L=>{ const r=state.results[L.id]; if(r){ const p=100*r.correct/r.total; if(p<weakPct){weakPct=p; weakest=L;} }});
+
+  const rows=LESSONS.map((L,i)=>{
+    const r=state.results[L.id];
+    const p=r?Math.round(100*r.correct/r.total):0;
+    const col=!r?"var(--bg3)": p>=80?"var(--good)":p>=50?"var(--hot)":"var(--bad)";
+    const tag = !r? `<span style="font-family:var(--mono);font-size:10px;color:var(--ink-faint)">شروع‌نشده</span>`
+      : p>=80? `<span class="tag-strong">خوب</span>` : p<50? `<span class="tag-weak">مرور</span>`:"";
+    return `<div class="rrow"><span class="rnum">${L.num}</span>
+      <span class="rname">${L.title.replace(/<\/?em>/g,"")}</span>
+      ${tag}
+      <span class="rbar"><i style="width:${p}%;background:${col}"></i></span>
+      <span class="rscore">${r?p+"٪":"—"}</span></div>`;
+  }).join("");
+
+  let revisit="";
+  const missedConcepts=[];
+  LESSONS.forEach(L=>{ const r=state.results[L.id]; if(r&&r.missed.length){ r.missed.forEach(k=> missedConcepts.push({L,q:L.quiz[k]})); }});
+  if(missedConcepts.length){
+    revisit=`<h2>چیزهایی که خوب است مرور کنی</h2><p>از همه‌ی پرسش‌هایی که اشتباه زدی جمع شده — دقیقاً همین مفهوم‌ها را محکم کن.</p>
+      <div class="miss-list" style="max-width:none">${missedConcepts.map(m=>`<div class="miss-item"><b>قدمِ ${m.L.num} · ${m.q.q}</b>${m.q.why}</div>`).join("")}</div>`;
+  } else if(completed>0){
+    revisit=`<div class="note"><div class="nh">عالی</div><p>در قدم‌هایی که کامل کردی، هیچ مفهومی را اشتباه نزدی. آفرین!</p></div>`;
+  }
+
+  const adaptive = (weakest && weakPct<80)
+    ? `<div class="note hot"><div class="nh">پیشنهادِ هوشمند</div><p>ضعیف‌ترین بخشت <strong>قدمِ ${weakest.num} — ${weakest.title.replace(/<\/?em>/g,"")}</strong> است (${Math.round(weakPct)}٪). قبل از ادامه، یک بار دیگر همان را بزن.</p></div>`
+    : (completed===LESSONS.length ? `<div class="note"><div class="nh">تمام شد</div><p>همه‌ی قدم‌ها در سطحِ تسلط‌اند. حالا می‌دانی یک GPT از اول تا آخر چطور ساخته می‌شود.</p></div>`:"");
+
+  $("#main").innerHTML=`
+    <div class="eyebrow"><span class="dot"></span> کارنامه</div>
+    <h1 class="title"><em>کارنامه‌ی</em> یادگیریِ تو</h1>
+    <p class="subtitle">یک نمای دقیق و قدم‌به‌قدم از این‌که مفهوم‌ها چقدر جا افتاده‌اند — و دقیقاً چه چیزی را مرور کنی.</p>
+    <div class="report-grid">
+      <div class="rcard"><div class="bigv">${pct}٪</div><div class="bk">تسلطِ کلی</div></div>
+      <div class="rcard"><div class="bigv">${c}/${t}</div><div class="bk">پاسخِ درست</div></div>
+      <div class="rcard"><div class="bigv">${completed}/${LESSONS.length}</div><div class="bk">قدم‌های کامل‌شده</div></div>
+    </div>
+    ${adaptive}
+    <h2>جزئیاتِ هر قدم</h2>
+    <div style="border:1px solid var(--line2);border-radius:14px;padding:6px 18px;background:var(--bg2)">${rows}</div>
+    ${revisit}
+    <div class="ctrl-row" style="margin-top:30px">
+      <button class="btn" id="backToCourse">→ بازگشت به دوره</button>
+    </div>`;
+  $("#backToCourse").onclick=()=>go(state.current);
+}
+
+/* ---------- drawer / chrome ---------- */
+function closeDrawer(){ $("#sidebar").classList.remove("open"); $("#scrim").classList.remove("show"); }
+$("#menuBtn").onclick=()=>{ $("#sidebar").classList.toggle("open"); $("#scrim").classList.toggle("show"); };
+$("#scrim").onclick=closeDrawer;
+$("#reportBtn").onclick=showReport;
+
+/* =========================================================================
+   ویجت‌ها — توابعِ مشترک + توزیع‌کننده
+   ========================================================================= */
+function wshell(host,label,title,pill){
+  host.innerHTML=`<div class="widget"><div class="widget-head">
+    <span class="wlabel">${label}</span><span class="wtitle">${title}</span>
+    ${pill?`<span class="pill">${pill}</span>`:""}</div>
+    <div class="widget-body"></div></div>`;
+  return host.querySelector(".widget-body");
+}
+function mountWidget(name,host){
+  const map={roadmap:wRoadmap,sampler:wSampler,tokenizer:wTokenizer,bigram:wBigram,neural:wNeuralNet,
+    attention:wAttention,graph:wGraph,architecture:wArchitecture,scale:wScale};
+  (map[name]||(()=>{}))(host);
+}
+
+/* الفبای فارسیِ پایه برای شماره‌گذاریِ پایدارِ توکنایزر */
+const PFA=" آابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیةيۀئءؤأإ؟،.!؛:".split("");
+const PSTOI={}; PFA.forEach((c,i)=>PSTOI[c]=i);
+const showCharFa=c=> c===" "?"␣": c==="\n"?"⏎": c;
+
+/* متنِ تمرینیِ کوتاه برای مدلِ bigram (اصلی، بدونِ کپی‌رایت) */
+const SHAKE_FA=`در یک روزِ آفتابی، گربه‌ای کوچک روی فرشِ قرمز نشست و آرام به باغ نگاه کرد. باد می‌وزید و برگ‌ها روی زمین می‌رقصیدند. کودکی در حیاط می‌دوید و می‌خندید و توپش را دنبال می‌کرد. مادر از پنجره صدا زد و گفت بیا داخل، هوا سرد شد و باران نزدیک است. گربه از جا بلند شد، کش‌وقوسی داد و دنبالِ کودک رفت. شب که شد، ماه بالای کوه روشن بود و همه‌جا ساکت و آرام. ستاره‌ها یکی‌یکی پیدا شدند و باغ در نورِ کم‌رنگِ ماه آرام گرفت. صبح دوباره خورشید آمد و پرنده‌ها روی شاخه آواز خواندند و روز از نو شروع شد.`;
+
+/* =========================================================================
+   00 — نقشه‌ی راه
+   ========================================================================= */
+function wRoadmap(host){
+  const body=wshell(host,"▤ نقشه‌ی راه","هشت ایستگاه تا یک GPTِ کارکُن","تعاملی");
+  const wrap=elt("div"); wrap.style.cssText="position:relative";
+  LESSONS.forEach((L,i)=>{
+    const stop=elt("button");
+    stop.style.cssText="display:flex;gap:14px;align-items:flex-start;width:100%;text-align:right;background:transparent;border:none;cursor:pointer;padding:9px 8px;border-radius:10px;transition:.15s;color:inherit;font-family:inherit";
+    stop.onmouseenter=()=>stop.style.background="var(--bg3)";
+    stop.onmouseleave=()=>stop.style.background="transparent";
+    const last=i===LESSONS.length-1;
+    stop.innerHTML=`
+      <span style="position:relative;flex:none;display:flex;flex-direction:column;align-items:center">
+        <span style="width:34px;height:34px;border-radius:9px;display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px;color:#0a0e16;background:${i===0?'var(--cold)':'linear-gradient(135deg,var(--hot),var(--pink))'}">${L.num}</span>
+        ${last?"":`<span style="width:2px;flex:1;min-height:18px;background:var(--line2);margin-top:4px"></span>`}
+      </span>
+      <span style="padding-bottom:8px">
+        <span style="display:block;font-weight:700;color:var(--ink);font-size:15px">${L.title.replace(/<\/?em>/g,"")}</span>
+        <span style="display:block;color:var(--ink-faint);font-size:13px;margin-top:2px">${L.sub}</span>
+      </span>`;
+    stop.onclick=()=>go(i);
+    wrap.appendChild(stop);
+  });
+  body.appendChild(wrap);
+  body.appendChild(elt("div","hint","روی هر ایستگاه بزن تا بپری همان‌جا. هر قدم روی قدمِ قبلی بنا شده، پس بارِ اول به‌ترتیب جلو برو."));
+}
+
+/* =========================================================================
+   01 — نمونه‌برداریِ احتمالاتی
+   ========================================================================= */
+function wSampler(host){
+  const body=wshell(host,"⤳ نمونه‌برداری","یک پرامپت، چند جوابِ متفاوت","تعاملی");
+  const cands=[["مُرد",.27],["اینجاست",.23],["رفته",.19],["دیوانه‌ست",.17],["مالِ من",.14]];
+  const log=[];
+  body.innerHTML=`
+    <div style="font-family:var(--mono);font-size:16px;margin-bottom:14px;direction:rtl">پادشاه <span style="color:var(--hot2);border-bottom:2px dashed var(--hot)">؟؟؟</span></div>
+    <div id="bars" style="display:grid;gap:7px;margin-bottom:16px"></div>
+    <div class="ctrl-row"><button class="btn" id="samp">⤳ یک‌بار نمونه بردار</button>
+      <button class="btn cold" id="samp5">⤳ پنج‌بار</button>
+      <button class="btn" id="clr">پاک‌کردن</button></div>
+    <div class="outbox" id="out" dir="rtl">دکمه را بزن — مدل هر کلمه را به‌اندازه‌ی احتمالش شانسی برمی‌دارد، برای همین هر بار فرق می‌کند.</div>`;
+  const bars=body.querySelector("#bars");
+  bars.innerHTML=cands.map(([w,p])=>`
+    <div style="display:flex;align-items:center;gap:10px;font-size:13px">
+      <span style="width:74px;color:var(--ink);font-family:var(--sans)">${w}</span>
+      <span style="flex:1;height:14px;border-radius:99px;background:var(--bg3);overflow:hidden;direction:ltr"><span style="display:block;height:100%;width:${p*100}%;background:${affColor(p/0.27)}"></span></span>
+      <span style="width:40px;text-align:left;color:var(--ink-dim);font-family:var(--mono)">${Math.round(p*100)}٪</span>
+    </div>`).join("");
+  const out=body.querySelector("#out");
+  function pick(){ let r=Math.random(),acc=0; for(const[w,p]of cands){acc+=p; if(r<=acc)return w;} return cands[cands.length-1][0]; }
+  function one(){ const w=pick(); log.unshift(w); if(log.length>8)log.pop();
+    out.innerHTML=log.map(w=>`پادشاه <span class="gen">${w}</span>.`).join("\n"); }
+  body.querySelector("#samp").onclick=one;
+  body.querySelector("#samp5").onclick=()=>{for(let i=0;i<5;i++)one();};
+  body.querySelector("#clr").onclick=()=>{log.length=0; out.textContent="پاک شد. دوباره نمونه بردار تا جواب‌های تازه ببینی.";};
+  body.appendChild(elt("div","hint","دقیقاً به همین خاطر ChatGPT هر بار جوابِ کمی متفاوت می‌دهد: به‌جای یک جوابِ ثابت، از روی یک توزیعِ احتمال نمونه برمی‌دارد."));
+}
+
+/* =========================================================================
+   02 — توکنایزر
+   ========================================================================= */
+function wTokenizer(host){
+  const body=wshell(host,"⌗ توکنایزر","متن ← عدد، زنده","تعاملی");
+  body.innerHTML=`
+    <div class="ctrl-row">
+      <div class="toggle-group" id="mode">
+        <button data-m="char" class="on">حرف‌به‌حرف (مالِ ما)</button>
+        <button data-m="sub">تکه‌کلمه‌ای (شبیهِ GPT)</button>
+      </div>
+    </div>
+    <input class="textin" id="tin" dir="rtl" value="سلام! حالت چطوره؟ بیا یاد بگیریم." spellcheck="false">
+    <div id="chips" class="chips" style="margin-top:16px;direction:rtl"></div>
+    <div class="statgrid" id="stats"></div>`;
+  const input=body.querySelector("#tin"), chips=body.querySelector("#chips"), stats=body.querySelector("#stats");
+  let mode="char";
+  const subRe=/[\u0600-\u06FF]+|[0-9۰-۹]+|[^\u0600-\u06FF0-9۰-۹\s]+|\s+/g;
+  const hashId=s=>{let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0; return h%50257;};
+  function render(){
+    const txt=input.value; chips.innerHTML="";
+    if(mode==="char"){
+      [...txt].forEach(c=>{
+        const id=PSTOI[c];
+        const chip=elt("div","chip"+(c===" "||c==="\n"?" space":""));
+        chip.innerHTML=`<span class="c">${showCharFa(c)}</span><span class="i" dir="ltr">${id!==undefined?id:"—"}</span>`;
+        chips.appendChild(chip);
+      });
+      stats.innerHTML=`
+        <div class="stat"><div class="v" dir="ltr">${[...txt].length}</div><div class="k">تعدادِ توکن</div></div>
+        <div class="stat"><div class="v cold" dir="ltr">${PFA.length}</div><div class="k">اندازه‌ی واژگان</div></div>
+        <div class="stat"><div class="v" dir="ltr">1 : 1</div><div class="k">حرف به توکن</div></div>`;
+    } else {
+      const toks=txt.match(subRe)||[];
+      toks.forEach(t=>{
+        const disp=t.replace(/ /g,"␣");
+        const chip=elt("div","chip"); chip.style.minWidth="auto"; chip.style.padding="5px 7px 4px";
+        chip.innerHTML=`<span class="c" style="font-size:13px">${disp}</span><span class="i" dir="ltr">${hashId(t)}</span>`;
+        chips.appendChild(chip);
+      });
+      stats.innerHTML=`
+        <div class="stat"><div class="v" dir="ltr">${toks.length}</div><div class="k">تعدادِ توکن</div></div>
+        <div class="stat"><div class="v cold" dir="ltr">~۵۰٬۰۰۰</div><div class="k">اندازه‌ی واژگان</div></div>
+        <div class="stat"><div class="v" dir="ltr">${([...txt].length/(toks.length||1)).toFixed(1)} : 1</div><div class="k">حرف به توکن</div></div>`;
+    }
+  }
+  body.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{ mode=b.dataset.m; body.querySelectorAll("#mode button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
+  input.oninput=render; render();
+  body.appendChild(elt("div","hint","یک جمله، دو روش. حرف‌به‌حرف: توکنِ زیاد، واژگانِ کوچک. تکه‌کلمه‌ای: توکنِ کم، واژگانِ بزرگ. (عددهای حالتِ تکه‌کلمه‌ای این‌جا فقط نمونه‌اند؛ روشِ واقعی، تکه‌ها را خودش از روی داده یاد می‌گیرد.)"));
+}
+
+/* =========================================================================
+   03 — مدلِ bigram
+   ========================================================================= */
+function wBigram(host){
+  const body=wshell(host,"▦ مدلِ bigram","فقط حرفِ قبلی → حرفِ بعدی","تعاملی");
+  const raw=SHAKE_FA.replace(/\u200c/g," ").replace(/\s+/g," ").trim();
+  const counts={}; const vocabSet=new Set();
+  for(const ch of raw) vocabSet.add(ch);
+  for(let i=0;i<raw.length-1;i++){ const a=raw[i], b=raw[i+1]; (counts[a]=counts[a]||{}); counts[a][b]=(counts[a][b]||0)+1; }
+  const V=vocabSet.size;
+  const probs=c=>{ const row=counts[c]; if(!row)return []; const tot=Object.values(row).reduce((a,b)=>a+b,0); return Object.entries(row).map(([k,v])=>[k,v/tot]).sort((a,b)=>b[1]-a[1]); };
+  let nll=0,nt=0; for(let i=0;i<raw.length-1;i++){ const a=raw[i],b=raw[i+1]; const row=counts[a]; const tot=Object.values(row).reduce((x,y)=>x+y,0); const p=(row[b]||0)/tot; nll+=-Math.log(p+1e-9); nt++; }
+  const loss=nll/nt, baseline=Math.log(V);
+  const sc=c=> c===" "?"␣": c;
+  const seeds=["ا","ن","ر","و","د","ب","م","ی","گ"].filter(c=>counts[c]);
+  body.innerHTML=`
+    <div class="statgrid" style="margin-top:0">
+      <div class="stat"><div class="v" dir="ltr">${loss.toFixed(2)}</div><div class="k">میانگینِ خطا</div></div>
+      <div class="stat"><div class="v cold" dir="ltr">${baseline.toFixed(2)}</div><div class="k">خطای حالتِ شانسی</div></div>
+      <div class="stat"><div class="v" dir="ltr">${V}</div><div class="k">تعدادِ نمادها</div></div>
+    </div>
+    <h3 style="margin:14px 0 8px;font-size:13px;color:var(--cold2);font-family:var(--sans)">بعد از این حرف، چه می‌آید؟</h3>
+    <div class="ctrl-row" id="charpick"></div>
+    <div id="dist" style="display:grid;gap:6px;margin-bottom:8px"></div>
+    <h3 style="margin:22px 0 8px;font-size:13px;color:var(--cold2);font-family:var(--sans)">با مدلِ bigram متن بساز</h3>
+    <div class="ctrl-row"><button class="btn" id="gen">⤳ حدودِ ۲۴۰ حرف بساز</button></div>
+    <div class="outbox" id="out" dir="rtl">مدلِ پایین فقط از روی یک حرفِ قبل کار می‌کند — دکمه را بزن.</div>`;
+  const pickRow=body.querySelector("#charpick"), dist=body.querySelector("#dist");
+  let cur=seeds[0]||"ا";
+  seeds.forEach(c=>{ const b=elt("button","btn"+(c===cur?" on":"")); b.textContent=`«${sc(c)}»`; b.onclick=()=>{cur=c;[...pickRow.children].forEach(x=>x.classList.remove("on"));b.classList.add("on");showDist();}; pickRow.appendChild(b); });
+  function showDist(){
+    const top=probs(cur).slice(0,8); const max=top.length?top[0][1]:1;
+    dist.innerHTML=top.map(([k,p])=>`
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px">
+        <span style="width:40px;color:var(--ink);font-family:var(--sans)">«${sc(k)}»</span>
+        <span style="flex:1;height:14px;border-radius:99px;background:var(--bg3);overflow:hidden;direction:ltr"><span style="display:block;height:100%;width:${p/max*100}%;background:${affColor(p/max)}"></span></span>
+        <span style="width:46px;text-align:left;color:var(--ink-dim);font-family:var(--mono)">${(p*100).toFixed(1)}٪</span></div>`).join("")
+      || `<div class="hint" style="margin:0">برای «${sc(cur)}» داده‌ای در متنِ نمونه نیست.</div>`;
+  }
+  function sample(c){ const row=probs(c); if(!row.length)return " "; let r=Math.random(),acc=0; for(const[k,p]of row){acc+=p; if(r<=acc)return k;} return row[0][0]; }
+  body.querySelector("#gen").onclick=()=>{ let c=seeds[0]||"ا",outp=c; for(let i=0;i<240;i++){ c=sample(c); outp+=c; } body.querySelector("#out").innerHTML=`<span class="gen">${outp}</span>`; };
+  showDist();
+  body.appendChild(elt("div","hint","شمارشِ واقعی، نمونه‌برداریِ واقعی. تکه‌های کوتاهِ شبیهِ کلمه می‌سازد، ولی نه کلمه‌ی درست و نه دستور — چون هر حرف فقط از روی حرفِ قبلی انتخاب می‌شود. شکستنِ همین سقف، کارِ «توجه» است."));
+}
+
+/* =========================================================================
+   04 — توجه به خود (ستونِ فقرات)
+   ========================================================================= */
+function wAttention(host){
+  const body=wshell(host,"⟁ توجه به خود","پرسش‌ها · کلیدها → یک ترکیبِ هوشمند","ستونِ فقرات");
+  const toks=["گربه","روی","فرش","قرمز","نشست","و","سپس","خوابید"];
+  const T=toks.length, H=4;
+  let Q=[],K=[],V=[], scaled=true, sel=T-1;
+  const rnd=()=>+(Math.random()*2-1).toFixed(2);
+  function reroll(){ Q=toks.map(()=>Array.from({length:H},rnd)); K=toks.map(()=>Array.from({length:H},rnd)); V=toks.map(()=>Array.from({length:H},rnd)); }
+  const dot=(a,b)=>{let s=0;for(let d=0;d<H;d++)s+=a[d]*b[d];return s;};
+  const rowWeights=i=>{ const l=K.map((kj,j)=> j<=i ? dot(Q[i],kj)*(scaled?1/Math.sqrt(H):1) : -Infinity); return softmax(l); };
+  body.innerHTML=`
+    <div class="ctrl-row">
+      <button class="btn" id="reroll">⟳ بُر زدنِ بردارها</button>
+      <div class="toggle-group" id="sc">
+        <button data-s="1" class="on">مقیاس‌دار ÷√d</button>
+        <button data-s="0">بدونِ مقیاس</button>
+      </div>
+      <span class="hint" style="margin:0">روی یک سطر بزن تا آن کلمه را بررسی کنی</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;align-items:start">
+      <div id="heat" dir="ltr"></div>
+      <div id="inspect"></div>
+    </div>
+    <div class="hint" id="ahint" style="margin-top:10px"></div>`;
+  const heat=body.querySelector("#heat"), inspect=body.querySelector("#inspect"), ah=body.querySelector("#ahint");
+  function render(){
+    const Wm=[];for(let i=0;i<T;i++)Wm.push(rowWeights(i));
+    const n=T, padL=64, padT=48, csz=30, gap=3;
+    const wsvg=padL+n*(csz+gap)+12, hsvg=padT+n*(csz+gap)+16;
+    let s=`<svg class="att-svg" viewBox="0 0 ${wsvg} ${hsvg}">`;
+    s+=`<text x="${padL+n*(csz+gap)/2}" y="13" text-anchor="middle" style="font-family:var(--sans);fill:var(--cold2);font-size:10px">کلید (به چه نگاه می‌شود)</text>`;
+    for(let j=0;j<n;j++){const cx=padL+j*(csz+gap)+csz/2; s+=`<text x="${cx}" y="${padT-8}" text-anchor="end" transform="rotate(-32 ${cx} ${padT-8})" style="font-family:var(--sans);font-size:9.5px;fill:var(--ink-faint)">${toks[j]}</text>`;}
+    for(let i=0;i<n;i++){
+      const cy=padT+i*(csz+gap), rowmax=Math.max(...Wm[i].filter(isFinite))||1;
+      s+=`<text data-row="${i}" x="${padL-8}" y="${cy+csz/2+3}" text-anchor="end" style="font-family:var(--sans);font-size:10.5px;cursor:pointer;fill:${sel===i?'var(--hot2)':'var(--ink-faint)'};${sel===i?'font-weight:700':''}">${toks[i]}</text>`;
+      for(let j=0;j<n;j++){
+        const cx=padL+j*(csz+gap);
+        if(j>i){ s+=`<rect x="${cx}" y="${cy}" width="${csz}" height="${csz}" rx="5" fill="var(--bg)" stroke="var(--line)"/>`; continue; }
+        const v=Wm[i][j], stroke=(sel===i)?'stroke="var(--hot)" stroke-width="2"':'stroke="var(--line2)" stroke-width="1"';
+        s+=`<rect data-row="${i}" x="${cx}" y="${cy}" width="${csz}" height="${csz}" rx="5" fill="${affColor(v/rowmax)}" ${stroke} style="cursor:pointer"/>`;
+        s+=`<text x="${cx+csz/2}" y="${cy+csz/2+3}" text-anchor="middle" style="font-family:var(--mono);font-size:8.5px;fill:#0a0e16;font-weight:600;pointer-events:none">${v<0.005?'':Math.round(v*100)}</text>`;
+      }
+    }
+    s+=`</svg>`;
+    heat.innerHTML=s;
+    heat.querySelectorAll("[data-row]").forEach(el=>{ el.onclick=()=>{ sel=+el.getAttribute("data-row"); render(); }; });
+    const wr=Wm[sel], peak=Math.max(...wr.filter(isFinite));
+    inspect.innerHTML=`
+      <div style="font-family:var(--sans);font-size:13px;color:var(--ink-dim);margin-bottom:10px">«<b style="color:var(--hot2)">${toks[sel]}</b>» به این‌ها توجه می‌کند:</div>
+      ${toks.slice(0,sel+1).map((t,j)=>{const p=wr[j];return `
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0">
+          <span style="width:52px;color:var(--ink);font-family:var(--sans)">${t}</span>
+          <span style="flex:1;height:13px;border-radius:99px;background:var(--bg3);overflow:hidden;direction:ltr"><span style="display:block;height:100%;width:${(p*100).toFixed(0)}%;background:${affColor(p)}"></span></span>
+          <span style="width:36px;text-align:left;color:var(--ink-dim);font-family:var(--mono)">${(p*100).toFixed(0)}٪</span></div>`;}).join("")}
+      <div class="statgrid" style="margin-top:14px">
+        <div class="stat"><div class="v" dir="ltr">${(peak*100).toFixed(0)}٪</div><div class="k">بیشترین وزن</div></div>
+        <div class="stat"><div class="v cold" dir="ltr">${sel+1}</div><div class="k">کلماتِ قابلِ‌دیدن</div></div>
+      </div>`;
+    ah.innerHTML = scaled
+      ? "میزانِ توجه = شباهتِ «پرسش» و «کلید»، تقسیم بر √d تا اعداد رام بمانند و توجه در ابتدا نرم و پخش باشد. «بُر زدن» را بزن تا ببینی الگو کاملاً به داده وابسته است."
+      : "<b>بدونِ مقیاس.</b> بدونِ تقسیم بر √d، اعداد بزرگ می‌شوند، softmax اشباع می‌شود و توجه روی یک کلمه قفل می‌کند. این، یادگیری را در ابتدا خراب می‌کند. برگرد به حالتِ مقیاس‌دار تا فرق را حس کنی.";
+  }
+  body.querySelector("#reroll").onclick=()=>{ reroll(); render(); };
+  body.querySelectorAll("#sc button").forEach(b=>b.onclick=()=>{ scaled=b.dataset.s==="1"; body.querySelectorAll("#sc button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
+  reroll(); render();
+}
+
+/* =========================================================================
+   05 — نمودارِ توجه (decoder / encoder)
+   ========================================================================= */
+function wGraph(host){
+  const body=wshell(host,"◦—◦ نمودارِ توجه","چه کسی اجازه دارد به چه کسی نگاه کند","تعاملی");
+  const N=8; let mode="dec", sel=-1;
+  body.innerHTML=`
+    <div class="ctrl-row">
+      <div class="toggle-group" id="gm">
+        <button data-g="dec" class="on">decoder (فقط گذشته)</button>
+        <button data-g="enc">encoder (کامل)</button>
+      </div>
+      <span class="hint" style="margin:0">روی یک گره بزن تا فقط خط‌های آن دیده شود</span>
+    </div>
+    <div id="gwrap" dir="ltr"></div>
+    <div class="hint" id="ghint" style="margin-top:10px"></div>`;
+  const wrap=body.querySelector("#gwrap"), gh=body.querySelector("#ghint");
+  function edges(){ const e=[]; for(let i=0;i<N;i++)for(let j=0;j<N;j++){ if(i===j)continue; if(mode==="dec"){if(j<i)e.push([j,i]);} else {if(i<j)e.push([i,j]);} } return e; }
+  function render(){
+    const W=560,H=210,pad=40,step=(W-2*pad)/(N-1),y=H-50;
+    const xs=Array.from({length:N},(_,i)=>pad+i*step);
+    let s=`<svg class="att-svg" viewBox="0 0 ${W} ${H}"><defs><marker id="ahg" markerWidth="9" markerHeight="9" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="var(--hot)"/></marker></defs>`;
+    edges().forEach(([a,b])=>{ const touch=sel<0||sel===a||sel===b; const xa=xs[a],xb=xs[b],mx=(xa+xb)/2,lift=Math.min(150,30+Math.abs(b-a)*22); const col=touch?(mode==="dec"?"var(--hot)":"var(--cold)"):"var(--line)"; s+=`<path d="M ${xa} ${y} Q ${mx} ${y-lift} ${xb} ${y}" fill="none" stroke="${col}" stroke-width="${touch?1.8:1}" opacity="${touch?0.9:0.22}" ${mode==="dec"?'marker-end="url(#ahg)"':''}/>`; });
+    xs.forEach((x,i)=>{ const on=sel===i; s+=`<circle data-node="${i}" cx="${x}" cy="${y}" r="14" fill="${on?'var(--hot-soft)':'var(--bg3)'}" stroke="${on?'var(--hot)':'var(--line2)'}" stroke-width="${on?2:1}" style="cursor:pointer"/>`; s+=`<text x="${x}" y="${y+4}" text-anchor="middle" style="font-family:var(--mono);font-size:11px;fill:var(--ink);pointer-events:none">${i}</text>`; });
+    s+=`<text x="${W/2}" y="${H-12}" text-anchor="middle" style="font-family:var(--sans);font-size:11px;fill:var(--ink-faint)">موقعیتِ کلمه‌ها (۰ تا ۷)</text>`;
+    s+=`</svg>`;
+    wrap.innerHTML=s;
+    wrap.querySelectorAll("[data-node]").forEach(el=>{ el.onclick=()=>{ const i=+el.getAttribute("data-node"); sel=sel===i?-1:i; render(); }; });
+    gh.innerHTML = mode==="dec"
+      ? "<b>decoder</b> — همان چیزی که برای تولید می‌سازیم. هر گره فقط از خودش و گره‌های قبلی اطلاعات می‌گیرد؛ آینده ماسک شده، پس کلمه‌ی ۵ می‌تواند ۰ تا ۵ را ببیند ولی ۶ را نه. GPT از همین نوع است."
+      : "<b>encoder</b> — ماسک را برمی‌داریم و هر گره با همه حرف می‌زند، هر دو طرف. وقتی کلِ متن از قبل معلوم است (مثلاً متنِ مبدأِ ترجمه یا یک جمله برای دسته‌بندی). BERT از همین نوع است.";
+  }
+  body.querySelectorAll("#gm button").forEach(b=>b.onclick=()=>{ mode=b.dataset.g; sel=-1; body.querySelectorAll("#gm button").forEach(x=>x.classList.toggle("on",x===b)); render(); });
+  render();
+}
+
+/* =========================================================================
+   06 — معماریِ کامل (قابلِ کلیک)
+   ========================================================================= */
+function wArchitecture(host){
+  const body=wshell(host,"▤ معماری","روی هر لایه بزن تا کار و دلیلش را ببینی","تعاملی");
+  const layers=[
+    {k:"عددهای حرف‌ها", d:"ورودی", why:"متنِ تو بعد از توکن‌سازی: یک دسته دنباله، هرکدام چند عدد. هنوز چیزی یاد گرفته نشده — فقط شماره‌ی حرف‌ها.", plain:"ورودی: دنباله‌ای از عددها (شماره‌ی هر حرف)."},
+    {k:"embedding + موقعیت", d:"بردارها", why:"برای هر حرف یک بردارِ یادگرفته‌شده می‌گیریم، و یک بردارِ موقعیت هم اضافه می‌کنیم تا ترتیب معنی پیدا کند. توجه به‌تنهایی ترتیب را نمی‌فهمد؛ بردارِ موقعیت آن را اضافه می‌کند.", plain:"هر حرف ← یک بردار. به‌علاوه‌ی یک بردار برای جای آن حرف در جمله."},
+    {k:"بلوکِ ترنسفورمر × N", d:"موتورِ مدل — باز کن", why:"چند بلوکِ هم‌شکل، روی هم. هر بلوک = ارتباط (توجه: کلمه‌ها با هم حرف می‌زنند) و بعد محاسبه (یک شبکه‌ی کوچک رویِ هر موقعیت). با اضافه‌کردنِ بلوک، مدل عمیق‌تر می‌شود.", plain:"اول کلمه‌ها با هم حرف می‌زنند (توجه)، بعد هرکدام جداگانه کمی فکر می‌کنند.", block:true},
+    {k:"LayerNorm نهایی", d:"تثبیت", why:"یک نرمال‌سازیِ آخر تا اعداد قبل از مرحله‌ی پایانی، متعادل و رام بمانند.", plain:"یک مرتب‌سازیِ آخر روی اعداد، قبل از خروجی."},
+    {k:"لایه‌ی خروجی", d:"امتیازها", why:"بردارِ هر موقعیت را به یک امتیاز برای هر حرفِ ممکن در واژگان تبدیل می‌کند.", plain:"برای هر حرفِ ممکن یک «امتیاز» می‌سازد."},
+    {k:"softmax ← انتخاب", d:"حرفِ بعدی", why:"امتیازهای آخرین موقعیت را به احتمال تبدیل می‌کند، یکی را شانسی برمی‌دارد، به متن می‌چسباند و دوباره از اول. همین حلقه، تولیدِ متن است.", plain:"امتیازها ← احتمال ← یک حرف انتخاب می‌شود ← دوباره از اول."}
+  ];
+  let sel=2;
+  body.innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;align-items:start">
+      <div id="stack" style="display:flex;flex-direction:column;gap:7px"></div>
+      <div id="adet"></div>
+    </div>`;
+  const stack=body.querySelector("#stack"), adet=body.querySelector("#adet");
+  function blockInner(){
+    const rail=(label,sub,kind)=>`
+      <div style="display:flex;align-items:center;gap:9px;margin:5px 0">
+        <span style="width:14px;flex:none;text-align:center;color:var(--hot);font-family:var(--mono);font-size:13px">${kind==="add"?"⊕":kind==="ln"?"∥":"▭"}</span>
+        <span style="flex:1;border:1px solid var(--line2);border-radius:8px;padding:7px 10px;background:${kind==="add"?'transparent':'var(--bg3)'};font-size:11.5px;color:var(--ink)">${label}${sub?`<span style="color:var(--ink-faint)"> — ${sub}</span>`:""}</span>
+      </div>`;
+    return `<div style="border-right:2px dashed var(--hot);margin:8px 4px 8px 0;padding-right:12px">
+      ${rail("LayerNorm","اول نرمال‌سازی","ln")}
+      ${rail("توجه (چند سر)","کلمه‌ها با هم حرف می‌زنند")}
+      ${rail("+ residual","ورودی را برمی‌گرداند (بزرگراهِ یادگیری)","add")}
+      ${rail("LayerNorm","اول نرمال‌سازی","ln")}
+      ${rail("شبکه‌ی کوچک","هر موقعیت جداگانه فکر می‌کند")}
+      ${rail("+ residual","ورودی را برمی‌گرداند","add")}
+    </div>`;
+  }
+  function render(){
+    stack.innerHTML=layers.map((L,i)=>`
+      <button data-l="${i}" style="text-align:right;cursor:pointer;border:1px solid ${sel===i?'var(--hot)':'var(--line2)'};border-radius:11px;padding:11px 13px;background:${sel===i?'var(--hot-soft)':'var(--bg3)'};transition:.15s;font-family:inherit;color:inherit">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline">
+          <span style="font-weight:700;color:${sel===i?'var(--hot2)':'var(--ink)'};font-size:14px">${L.k}</span>
+          <span style="font-family:var(--mono);font-size:10.5px;color:var(--ink-faint)">${L.d}</span>
+        </div>
+        ${L.block?blockInner():""}
+      </button>`).join("");
+    stack.querySelectorAll("[data-l]").forEach(el=>{ el.onclick=()=>{ sel=+el.getAttribute("data-l"); render(); }; });
+    const L=layers[sel];
+    adet.innerHTML=`
+      <div class="note hot"><div class="nh">${L.k}</div><p>${L.why}</p></div>
+      <div class="outbox" dir="rtl" style="margin-top:12px;color:var(--cold2)">${L.plain}</div>
+      <div class="hint" style="margin-top:12px">${L.block ? "آن دو خطِ «+ residual» رازِ آموزشِ شبکه‌های عمیق است: بلوک به‌جای پاک‌کردنِ سیگنال، یک «اصلاح» به آن اضافه می‌کند، تا یادگیری در عمق روان بماند." : "روی لایه‌ی دیگری بزن تا مسیرِ رفت را قدم‌به‌قدم ببینی."}</div>`;
+  }
+  render();
+}
+
+/* =========================================================================
+   07 — مقیاس و تبدیل به ChatGPT
+   ========================================================================= */
+function wScale(host){
+  const body=wshell(host,"△ مقیاس و همسوسازی","از یک اسباب‌بازیِ ۱۰ میلیونی تا ChatGPT","تعاملی");
+  const fmtBig=v=> v>=1e9?(v/1e9).toFixed(v>=1e11?0:1)+"B" : v>=1e6?(v/1e6).toFixed(0)+"M" : v>=1e3?(v/1e3).toFixed(0)+"K" : ""+v;
+  const params=[ {n:"مدلِ ما", v:1e7, c:"var(--cold)"}, {n:"GPT-2", v:1.24e8, c:"var(--hot)"}, {n:"GPT-3", v:1.75e11, c:"var(--pink)"} ];
+  const tokens=[ {n:"تمرینِ ما", v:1e6, c:"var(--cold)"}, {n:"پیش‌آموزشِ GPT-3", v:3e11, c:"var(--pink)"} ];
+  const lmin=Math.log10(1e6), lmax=Math.log10(1.75e11);
+  const barRow=o=>{ const pct=((Math.log10(o.v)-lmin)/(lmax-lmin)*100).toFixed(1); return `<div style="margin:9px 0">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--ink);font-family:var(--sans)">${o.n}</span><span style="color:var(--ink-dim);font-family:var(--mono)" dir="ltr">${fmtBig(o.v)}</span></div>
+      <div style="height:16px;border-radius:99px;background:var(--bg3);overflow:hidden;border:1px solid var(--line);direction:ltr"><div style="height:100%;width:${pct}%;background:${o.c};border-radius:99px"></div></div></div>`; };
+  const stages=[
+    {t:"۱ · پیش‌آموزش", d:"حدسِ حرفِ بعدی روی حجمِ عظیمی متن. همان چیزی که ساختیم — مرحله‌ی کُند و گران که بیشترِ دانش این‌جا جذب می‌شود.", hot:true, tag:"ساختیمش"},
+    {t:"۲ · تنظیم با نمونه", d:"آموزشِ بیشتر روی نمونه‌های «سؤال ← جوابِ خوب» که آدم‌ها نوشته‌اند، تا لحنِ یک دستیار را یاد بگیرد."},
+    {t:"۳ · مدلِ پاداش", d:"آدم‌ها چند جواب را از بهتر به بدتر رتبه می‌دهند؛ یک مدلِ جدا یاد می‌گیرد این سلیقه را امتیاز بدهد."},
+    {t:"۴ · RLHF", d:"با یادگیریِ تقویتی، مدل را به‌سمتِ جواب‌هایی هل می‌دهیم که مدلِ پاداش امتیازِ بالا می‌دهد. همین، GPT را ChatGPT می‌کند."}
+  ];
+  body.innerHTML=`
+    <h3 style="margin:2px 0 4px;font-size:14px;color:var(--ink);font-family:var(--sans)">تعدادِ پارامترها (مقیاسِ لگاریتمی)</h3>
+    <div>${params.map(barRow).join("")}</div>
+    <h3 style="margin:20px 0 4px;font-size:14px;color:var(--ink);font-family:var(--sans)">حجمِ دادهٔ آموزش (مقیاسِ لگاریتمی)</h3>
+    <div>${tokens.map(barRow).join("")}</div>
+    <div class="hint" style="margin:10px 0 4px">همان کد، فقط بیشتر از همه‌چیز: بردارهای بزرگ‌تر، سرهای بیشتر، بلوک‌های بیشتر، دادهٔ بیشتر، محاسبه‌ی بیشتر. ساختاری که الان فهمیدی، تقریباً بدونِ تغییر تا میلیاردها پارامتر بالا می‌رود.</div>
+    <div class="section-rule" style="margin:22px 0"></div>
+    <h3 style="margin:0 0 10px;font-size:14px;color:var(--ink);font-family:var(--sans)">مسیرِ GPT تا ChatGPT</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      ${stages.map(s=>`<div style="flex:1;min-width:200px;border:1px solid ${s.hot?'var(--hot)':'var(--line2)'};border-radius:12px;padding:12px 13px;background:${s.hot?'var(--hot-soft)':'var(--bg3)'}">
+        <div style="font-size:12.5px;font-weight:700;color:${s.hot?'var(--hot2)':'var(--ink)'};margin-bottom:6px">${s.t}${s.tag?` <span style="font-size:9px;color:var(--cold2);border:1px solid var(--cold);border-radius:99px;padding:1px 7px;margin-right:4px">${s.tag}</span>`:""}</div>
+        <div style="font-size:12.5px;color:var(--ink-dim);line-height:1.6">${s.d}</div></div>`).join("")}
+    </div>
+    <div class="hint" style="margin-top:14px">پیش‌آموزش بیش از ۹۹٪ِ محاسبه است و همان چیزی که این دوره ساخت. سه مرحله‌ی بعدی («همسوسازی») کوچک‌اند ولی همان‌ها مدل را وادار می‌کنند به دستور گوش بدهد، نه این‌که فقط متن را ادامه دهد.</div>`;
+}
+
+
+/* =========================================================================
+   04 — آزمایشگاهِ شبکه‌ی عصبی (تعاملی، با انیمیشنِ جریانِ داده)
+   کلِ موتور داخلِ این تابع کپسوله شده تا با بقیه‌ی برنامه تداخل نکند.
+   ========================================================================= */
+function wNeuralNet(host){
+  const body=wshell(host,"◉ آزمایشگاه","شبکه‌ی عصبی، زنده","تعاملی");
+  body.innerHTML=`<div class="nnlab">
+    <div class="tabs">
+      <button class="tab on" data-t="neuron">یک نورون <span class="n">۱</span></button>
+      <button class="tab" data-t="net">سگ یا گربه؟ <span class="n">۲</span></button>
+      <button class="tab" data-t="learn">چطور یاد می‌گیرد <span class="n">۳</span></button>
+      <button class="tab" data-t="nodes">هشت نود <span class="n">۴</span></button>
+    </div>
+
+    <section class="panel show" id="p-neuron">
+      <h2>یک نورون</h2>
+      <p>کوچک‌ترین واحدِ یک شبکه: هر ورودی را در یک «وزن» ضرب می‌کند، همه را جمع می‌کند، یک «سوگیری» اضافه می‌کند، و آخر نتیجه را بینِ ۰ و ۱ فشرده می‌کند. لغزنده‌ها را تکان بده.</p>
+      <div id="nrn-svg"></div>
+      <div class="readout" id="nrn-readout"></div>
+      <div class="sliders">
+        <div class="glabel">ورودی‌ها</div>
+        <div class="srow"><span>ورودی ۱</span><input class="nr-slider" type="range" min="0" max="100" value="80" data-k="x" data-i="0"><span>x₁</span></div>
+        <div class="srow"><span>ورودی ۲</span><input class="nr-slider" type="range" min="0" max="100" value="30" data-k="x" data-i="1"><span>x₂</span></div>
+        <div class="srow"><span>ورودی ۳</span><input class="nr-slider" type="range" min="0" max="100" value="60" data-k="x" data-i="2"><span>x₃</span></div>
+        <div class="glabel" style="margin-top:6px">وزن‌ها (می‌تواند منفی هم باشد)</div>
+        <div class="srow"><span>وزن ۱</span><input class="nr-slider" type="range" min="0" max="100" value="80" data-k="w" data-i="0"><span>w₁</span></div>
+        <div class="srow"><span>وزن ۲</span><input class="nr-slider" type="range" min="0" max="100" value="10" data-k="w" data-i="1"><span>w₂</span></div>
+        <div class="srow"><span>وزن ۳</span><input class="nr-slider" type="range" min="0" max="100" value="95" data-k="w" data-i="2"><span>w₃</span></div>
+      </div>
+      <div class="hint">«یادگیری» یعنی پیداکردنِ همین وزن‌ها. یک شبکه‌ی واقعی میلیون‌ها نورونِ مثلِ این دارد که در لایه‌ها چیده شده‌اند.</div>
+    </section>
+
+    <section class="panel" id="p-net">
+      <h2>شبکه: سگ یا گربه؟</h2>
+      <p>این شبکه واقعی است و همین حالا در مرورگرت آموزش دیده. یک تصویرِ ۶×۶ بکش یا انتخاب کن، بعد «اجرا» را بزن تا داده را ببینی که لایه‌به‌لایه تا تصمیمِ نهایی جلو می‌رود.</p>
+      <div class="net-layout">
+        <div class="gridwrap">
+          <div class="glabel">تصویرِ ورودی</div>
+          <div class="grid" id="grid"></div>
+          <div class="ctrl" style="justify-content:center">
+            <button class="btn" id="btn-dog">🐕 سگ</button>
+            <button class="btn" id="btn-cat">🐈 گربه</button>
+            <button class="btn" id="btn-clear">پاک</button>
+          </div>
+        </div>
+        <div><div id="net-svg"></div></div>
+      </div>
+      <div class="ctrl" style="margin-top:6px"><button class="btn on" id="btn-run">▶ اجرا (جریانِ داده)</button></div>
+      <div class="verdict" id="verdict"></div>
+      <div class="hint">خط‌های سبز وزنِ مثبت، صورتی‌ها منفی؛ هرچه ضخیم‌تر، وزن بزرگ‌تر. نقطه‌های روان همان داده‌ای هستند که عبور می‌کنند — هرچه پررنگ‌تر، سیگنالِ قوی‌تر.</div>
+    </section>
+
+    <section class="panel" id="p-learn">
+      <h2>چطور یاد می‌گیرد</h2>
+      <p>اول وزن‌ها تصادفی‌اند، پس شبکه فقط حدس می‌زند. هر بار جوابش را با جوابِ درست مقایسه می‌کنیم، «خطا» را می‌سنجیم و وزن‌ها را کمی اصلاح می‌کنیم. ببین خطا پایین می‌آید و خط‌ها جابه‌جا می‌شوند.</p>
+      <div id="learn-svg"></div>
+      <div class="ctrl" style="margin-top:8px">
+        <button class="btn" id="btn-step">+۲۰ قدمِ آموزش</button>
+        <button class="btn on" id="btn-auto">▶ آموزشِ خودکار</button>
+        <button class="btn cold" id="btn-reset">↺ از نو</button>
+      </div>
+      <div class="statrow" id="learn-stats"></div>
+      <div class="glabel">منحنیِ خطا</div>
+      <canvas id="loss"></canvas>
+      <div class="hint">همین حلقه‌ی «حدس بزن ← خطا را بسنج ← وزن‌ها را اصلاح کن» یک مدلِ زبانی را هم آموزش می‌دهد؛ آن‌جا «جوابِ درست» یعنی حرفِ بعدیِ واقعی در متن.</div>
+    </section>
+
+    <section class="panel" id="p-nodes">
+      <h2>هشت نود و ربط به GPT</h2>
+      <p>در درس‌گفتار هشت نود کشیده می‌شود. هر نود یک موقعیت در متن است و می‌تواند به نودهای قبلیِ خودش نگاه کند. دکمه را بزن تا جریانِ اطلاعات را ببینی.</p>
+      <div id="nodes-svg"></div>
+      <div class="ctrl" style="margin-top:8px"><button class="btn on" id="btn-flow">▶ جریانِ اطلاعات (فقط از گذشته)</button></div>
+      <div class="hint">یک نورون یک عدد می‌سازد؛ ولی وقتی نودها یاد می‌گیرند به کدام نودِ قبلی بیشتر گوش بدهند، اسمش می‌شود «توجه» (attention) — همان قلبِ GPT که در قدمِ بعد می‌بینیم.</div>
+    </section>
+  </div>`;
+
+  /* ---------- ابزارهای محلی ---------- */
+  const $=(s)=>body.querySelector(s);
+  const $$=(s)=>[...body.querySelectorAll(s)];
+  const NS="http://www.w3.org/2000/svg";
+  const Ec=(tag,a)=>{const e=document.createElementNS(NS,tag); if(a)for(const k in a)e.setAttribute(k,a[k]); return e;};
+  const clampL=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const lerpL=(a,b,t)=>a+(b-a)*t;
+  const sigL=x=>1/(1+Math.exp(-x));
+  const softmaxL=z=>{const m=Math.max(...z);const e=z.map(v=>Math.exp(v-m));const s=e.reduce((a,b)=>a+b,0)||1;return e.map(v=>v/s);};
+  const randnL=()=>(Math.random()*2-1);
+  const matL=(r,c,fn)=>Array.from({length:r},()=>Array.from({length:c},fn));
+  const colL=t=>{t=clampL(t,0,1);const c=[54,214,194],h=[255,154,82];
+    return `rgba(${Math.round(lerpL(c[0],h[0],t))},${Math.round(lerpL(c[1],h[1],t))},${Math.round(lerpL(c[2],h[2],t))},${(0.18+0.82*t).toFixed(3)})`;};
+
+  /* ---------- شبکه ---------- */
+  function makeNet(dims){
+    let W=[],b=[];
+    function reseed(){W=[];b=[];for(let l=0;l<dims.length-1;l++){W.push(matL(dims[l+1],dims[l],()=>randnL()*0.9));b.push(Array(dims[l+1]).fill(0));}}
+    reseed();
+    function forward(x){const acts=[x.slice()];let a=x;
+      for(let l=0;l<W.length;l++){const z=W[l].map((row,i)=>row.reduce((s,w,j)=>s+w*a[j],b[l][i]));a=(l<W.length-1)?z.map(sigL):softmaxL(z);acts.push(a);}
+      return {acts};}
+    function trainStep(x,y,lr){const {acts}=forward(x);const out=acts[acts.length-1];const d=new Array(W.length);
+      d[W.length-1]=out.map((v,i)=>v-y[i]);
+      for(let l=W.length-2;l>=0;l--){const a=acts[l+1],dn=d[l+1];d[l]=a.map((av,j)=>{let s=0;for(let i=0;i<dims[l+2];i++)s+=dn[i]*W[l+1][i][j];return s*av*(1-av);});}
+      for(let l=0;l<W.length;l++){const ain=acts[l];for(let i=0;i<dims[l+1];i++){for(let j=0;j<dims[l];j++)W[l][i][j]-=lr*d[l][i]*ain[j];b[l][i]-=lr*d[l][i];}}
+      return -Math.log(out[y[0]>=y[1]?0:1]+1e-9);}
+    return {dims,forward,trainStep,reseed,getW:()=>W};
+  }
+  const DOG=[[1,0,0,0,0,1],[0,1,0,0,1,0],[1,1,1,1,1,1],[1,1,1,1,1,1],[0,1,1,1,1,0],[0,1,0,0,1,0]];
+  const CAT=[[1,1,0,0,1,1],[0,1,1,1,1,0],[1,0,1,1,0,1],[1,1,1,1,1,1],[0,1,1,1,1,0],[0,0,1,1,0,0]];
+  const imgToX=img=>img.map(r=>r.reduce((a,b)=>a+b,0)/r.length);
+  const noisy=img=>img.map(r=>r.map(v=>Math.random()<0.12?1-v:v));
+  function trainNet(net,ep,lr){let L=0;for(let e=0;e<ep;e++){const dog=Math.random()<0.5;L=net.trainStep(imgToX(noisy(dog?DOG:CAT)),dog?[1,0]:[0,1],lr);}return L;}
+  function accuracy(net){const d=net.forward(imgToX(DOG)).acts[3],c=net.forward(imgToX(CAT)).acts[3];return((d[0]>d[1]?1:0)+(c[1]>c[0]?1:0))/2;}
+  const DIMS=[6,5,4,2];
+  const netA=makeNet(DIMS), netB=makeNet(DIMS);
+  for(let r=0;r<12;r++){netA.reseed();trainNet(netA,1600,0.5);if(accuracy(netA)>=1)break;}
+
+  /* ---------- پالس ---------- */
+  function pulseLayer(svg){
+    const g=Ec("g");svg.appendChild(g);const ps=[];let raf=null;
+    function tick(now){for(let i=ps.length-1;i>=0;i--){const p=ps[i];if(now<p.t0)continue;
+      const t=clampL((now-p.t0)/p.dur,0,1),e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+      p.c.setAttribute("cx",lerpL(p.x1,p.x2,e));p.c.setAttribute("cy",lerpL(p.y1,p.y2,e));p.c.setAttribute("r",(p.r*Math.sin(Math.PI*t)).toFixed(2));
+      if(t>=1){p.c.remove();ps.splice(i,1);}}
+      raf=ps.length?requestAnimationFrame(tick):null;}
+    return {spawn(x1,y1,x2,y2,o={}){const c=Ec("circle",{cx:x1,cy:y1,r:0,fill:o.color||"var(--cold2)"});c.style.filter=`drop-shadow(0 0 5px ${o.color||"var(--cold2)"})`;g.appendChild(c);
+      ps.push({c,x1,y1,x2,y2,r:o.r||4,dur:o.dur||620,t0:performance.now()+(o.delay||0)});if(!raf)raf=requestAnimationFrame(tick);},
+      clear(){ps.forEach(p=>p.c.remove());ps.length=0;if(raf){cancelAnimationFrame(raf);raf=null;}}};
+  }
+
+  /* ---------- صحنه ۲: شبکه ---------- */
+  const NETW=720,NETH=440;
+  const LAY=[{n:6,x:652,t:"ورودی"},{n:5,x:478,t:"پنهان"},{n:4,x:300,t:"پنهان"},{n:2,x:120,t:"خروجی"}];
+  const yOf=(n,i)=>{const gap=Math.min(70,(NETH-90)/Math.max(n-1,1));return NETH/2-(gap*(n-1))/2+i*gap+8;};
+  let netSVG,netPL,netNodes,netGrid=DOG.map(r=>r.slice()),netBusy=false;
+  function buildNetScene(){
+    const h=$("#net-svg");h.innerHTML="";netSVG=Ec("svg",{viewBox:`0 0 ${NETW} ${NETH}`,class:"flow-svg"});h.appendChild(netSVG);
+    const W=netA.getW();let mx=0;W.forEach(m=>m.forEach(r=>r.forEach(v=>mx=Math.max(mx,Math.abs(v)))));
+    for(let l=0;l<LAY.length-1;l++)for(let i=0;i<LAY[l+1].n;i++)for(let j=0;j<LAY[l].n;j++)
+      netSVG.appendChild(Ec("line",{x1:LAY[l].x,y1:yOf(LAY[l].n,j),x2:LAY[l+1].x,y2:yOf(LAY[l+1].n,i),
+        stroke:W[l][i][j]>=0?"rgba(54,214,194,.18)":"rgba(255,111,156,.18)","stroke-width":clampL(0.4+Math.abs(W[l][i][j])/mx*2.6,0.4,3).toFixed(2)}));
+    LAY.forEach(L=>{const t=Ec("text",{x:L.x,y:24,"text-anchor":"middle",class:"lay-label"});t.textContent=L.t;netSVG.appendChild(t);});
+    netNodes=LAY.map((L,l)=>Array.from({length:L.n},(_,i)=>{const x=L.x,y=yOf(L.n,i);
+      const c=Ec("circle",{cx:x,cy:y,r:l===3?20:15,fill:"var(--bg3)",stroke:"var(--line2)","stroke-width":1.4,class:"nn-node"});netSVG.appendChild(c);
+      const lab=Ec("text",{x,y:y+4,"text-anchor":"middle",class:"nn-val"});netSVG.appendChild(lab);
+      if(l===3){const em=Ec("text",{x,y:y-26,"text-anchor":"middle",class:"nn-emoji"});em.textContent=i===0?"🐕":"🐈";netSVG.appendChild(em);}
+      return {x,y,c,lab};}));
+    netPL=pulseLayer(netSVG);buildGrid();paintInputs(imgToX(netGrid));
+    $("#verdict").innerHTML=`<div class="vhint">یک تصویر بساز یا انتخاب کن، بعد «اجرا» را بزن.</div>`;
+  }
+  function setActs(l,vals){netNodes[l].forEach((nd,i)=>{const v=vals[i];nd.c.setAttribute("fill",colL(v));nd.c.style.filter=`drop-shadow(0 0 ${(v*10).toFixed(1)}px ${colL(v)})`;
+    nd.lab.textContent=l===3?Math.round(v*100)+"٪":v.toFixed(2);nd.lab.setAttribute("fill",v>0.45?"#0a0e16":"var(--ink-dim)");});}
+  function paintInputs(x){setActs(0,x);for(let l=1;l<4;l++)netNodes[l].forEach(nd=>{nd.c.setAttribute("fill","var(--bg3)");nd.c.style.filter="none";nd.lab.textContent="";});}
+  function runForward(){
+    if(netBusy)return;netBusy=true;netPL.clear();
+    const x=imgToX(netGrid),res=netA.forward(x),acts=res.acts,W=netA.getW();setActs(0,x);
+    const GAP=760,DUR=640;
+    for(let l=0;l<3;l++){const t0=l*GAP;
+      for(let i=0;i<LAY[l+1].n;i++)for(let j=0;j<LAY[l].n;j++){const s=W[l][i][j]*acts[l][j],src=netNodes[l][j],tgt=netNodes[l+1][i];
+        netPL.spawn(src.x,src.y,tgt.x,tgt.y,{color:s>=0?"var(--cold2)":"var(--pink)",r:clampL(1.8+Math.abs(s)*3.4,1.6,7),dur:DUR,delay:t0});}
+      setTimeout(()=>setActs(l+1,acts[l+1]),t0+DUR);}
+    setTimeout(()=>{showVerdict(acts[3]);netBusy=false;},3*GAP+DUR+80);
+  }
+  function showVerdict(out){const v=$("#verdict");if(!v)return;const dog=out[0],cat=out[1],win=dog>=cat?"🐕 سگ":"🐈 گربه",conf=Math.round(Math.max(dog,cat)*100);
+    v.innerHTML=`<div class="vtitle">تصمیمِ شبکه: <b>${win}</b> <span class="vconf">(${conf}٪ مطمئن)</span></div>
+      <div class="vbar"><span style="width:${(dog*100).toFixed(0)}%;background:${colL(dog)}"></span><label>🐕 سگ ${Math.round(dog*100)}٪</label></div>
+      <div class="vbar"><span style="width:${(cat*100).toFixed(0)}%;background:${colL(cat)}"></span><label>🐈 گربه ${Math.round(cat*100)}٪</label></div>`;}
+  let painting=false,paintVal=1;
+  function buildGrid(){const g=$("#grid");g.innerHTML="";netGrid.forEach((row,r)=>row.forEach((v,c)=>{
+    const cell=document.createElement("div");cell.className="px"+(v?" on":"");
+    cell.onpointerdown=ev=>{ev.preventDefault();painting=true;paintVal=netGrid[r][c]?0:1;setCell(r,c,paintVal);};
+    cell.onpointerenter=()=>{if(painting)setCell(r,c,paintVal);};g.appendChild(cell);}));}
+  function setCell(r,c,v){netGrid[r][c]=v;$("#grid").children[r*6+c].classList.toggle("on",!!v);paintInputs(imgToX(netGrid));
+    const vd=$("#verdict");if(vd)vd.innerHTML=`<div class="vhint">تصویر عوض شد — «اجرا» را بزن.</div>`;}
+  function loadPreset(w){netGrid=(w==="dog"?DOG:CAT).map(r=>r.slice());buildGrid();paintInputs(imgToX(netGrid));
+    $("#verdict").innerHTML=`<div class="vhint">${w==="dog"?"🐕":"🐈"} الگو بارگذاری شد — «اجرا» را بزن.</div>`;}
+
+  /* ---------- صحنه ۱: نورون ---------- */
+  const NRW=560,NRH=300;
+  let nrIn=[0.8,0.3,0.6],nrW=[1.1,-0.8,0.9],nrB=-0.2,nrnSVG;
+  function buildNeuron(){
+    const h=$("#nrn-svg");h.innerHTML="";const svg=Ec("svg",{viewBox:`0 0 ${NRW} ${NRH}`,class:"flow-svg"});h.appendChild(svg);
+    const inX=470,nX=250,outX=70,ys=[80,150,220],nY=150;
+    ys.forEach((y,i)=>svg.appendChild(Ec("line",{x1:inX,y1:y,x2:nX,y2:nY,stroke:nrW[i]>=0?"rgba(54,214,194,.5)":"rgba(255,111,156,.5)","stroke-width":clampL(0.6+Math.abs(nrW[i])*2,0.6,4).toFixed(2),class:"nrw-edge","data-i":i})));
+    svg.appendChild(Ec("line",{x1:nX,y1:nY,x2:outX,y2:nY,stroke:"var(--line2)","stroke-width":2}));
+    ys.forEach((y,i)=>{svg.appendChild(Ec("circle",{cx:inX,cy:y,r:18,fill:colL(nrIn[i]),stroke:"var(--line2)",class:"nrx-node","data-i":i}));
+      const t=Ec("text",{x:inX,y:y+4,"text-anchor":"middle",class:"nn-val nrx-val","data-i":i});t.textContent=nrIn[i].toFixed(1);svg.appendChild(t);
+      const wl=Ec("text",{x:(inX+nX)/2,y:lerpL(y,nY,0.5)-6,"text-anchor":"middle",class:"edge-w","data-i":i});wl.textContent="w="+nrW[i].toFixed(1);svg.appendChild(wl);});
+    svg.appendChild(Ec("circle",{cx:nX,cy:nY,r:30,fill:"var(--bg3)",stroke:"var(--hot)","stroke-width":2,id:"nrn-core"}));
+    svg.appendChild(Ec("text",{x:nX,y:nY+4,"text-anchor":"middle",class:"nn-val",id:"nrn-sum"}));
+    svg.appendChild(Ec("text",{x:nX,y:nY-40,"text-anchor":"middle",class:"lay-label"})).textContent="جمع و فشرده‌سازی";
+    svg.appendChild(Ec("circle",{cx:outX,cy:nY,r:22,fill:"var(--bg3)",stroke:"var(--line2)",id:"nrn-out"}));
+    svg.appendChild(Ec("text",{x:outX,y:nY+4,"text-anchor":"middle",class:"nn-val",id:"nrn-outv"}));
+    svg.appendChild(Ec("text",{x:outX,y:nY-32,"text-anchor":"middle",class:"lay-label"})).textContent="خروجی";
+    nrnSVG=svg;updateNeuron();
+  }
+  function updateNeuron(){let z=nrB;for(let i=0;i<3;i++)z+=nrW[i]*nrIn[i];const a=sigL(z);
+    $("#nrn-sum").textContent=z.toFixed(2);$("#nrn-core").setAttribute("fill",colL(clampL((z+3)/6,0,1)));
+    $("#nrn-out").setAttribute("fill",colL(a));$("#nrn-out").style.filter=`drop-shadow(0 0 ${(a*10).toFixed(1)}px ${colL(a)})`;
+    $("#nrn-outv").textContent=a.toFixed(2);$("#nrn-outv").setAttribute("fill",a>.45?"#0a0e16":"var(--ink-dim)");
+    $$(".nrx-node").forEach(c=>{const i=+c.dataset.i;c.setAttribute("fill",colL(nrIn[i]));});
+    $$(".nrx-val").forEach(t=>{const i=+t.dataset.i;t.textContent=nrIn[i].toFixed(1);t.setAttribute("fill",nrIn[i]>.45?"#0a0e16":"var(--ink-dim)");});
+    $$(".edge-w").forEach(t=>{const i=+t.dataset.i;t.textContent="w="+nrW[i].toFixed(1);});
+    $$(".nrw-edge").forEach(l=>{const i=+l.dataset.i;l.setAttribute("stroke",nrW[i]>=0?"rgba(54,214,194,.6)":"rgba(255,111,156,.6)");l.setAttribute("stroke-width",clampL(0.6+Math.abs(nrW[i])*2,0.6,4).toFixed(2));});
+    $("#nrn-readout").innerHTML=`جمع = ورودی‌ها × وزن‌ها + سوگیری = <b>${z.toFixed(2)}</b> ← فشرده‌سازی → خروجی = <b>${a.toFixed(2)}</b>`;}
+
+  /* ---------- صحنه ۳: یادگیری ---------- */
+  let learnSVG,learnEdges,learnLosses=[],learnIter=0,learnTimer=null;
+  function buildLearn(){
+    const h=$("#learn-svg");h.innerHTML="";learnSVG=Ec("svg",{viewBox:`0 0 ${NETW} ${NETH}`,class:"flow-svg"});h.appendChild(learnSVG);learnEdges=[];
+    for(let l=0;l<LAY.length-1;l++)for(let i=0;i<LAY[l+1].n;i++)for(let j=0;j<LAY[l].n;j++){
+      const ln=Ec("line",{x1:LAY[l].x,y1:yOf(LAY[l].n,j),x2:LAY[l+1].x,y2:yOf(LAY[l+1].n,i),stroke:"rgba(150,172,205,.18)","stroke-width":1});learnSVG.appendChild(ln);learnEdges.push({ln,l,i,j});}
+    LAY.forEach(L=>{const t=Ec("text",{x:L.x,y:24,"text-anchor":"middle",class:"lay-label"});t.textContent=L.t;learnSVG.appendChild(t);
+      for(let i=0;i<L.n;i++)learnSVG.appendChild(Ec("circle",{cx:L.x,cy:yOf(L.n,i),r:L.t==="خروجی"?18:13,fill:"var(--bg3)",stroke:"var(--line2)","stroke-width":1.2}));});
+    refreshLearnEdges();drawLoss();updateLearnStats();
+  }
+  function refreshLearnEdges(){if(!learnEdges)return;const W=netB.getW();let mx=0;W.forEach(m=>m.forEach(r=>r.forEach(v=>mx=Math.max(mx,Math.abs(v)))));mx=mx||1;
+    learnEdges.forEach(e=>{const v=W[e.l][e.i][e.j];e.ln.setAttribute("stroke",v>=0?"rgba(54,214,194,.55)":"rgba(255,111,156,.55)");e.ln.setAttribute("stroke-width",clampL(0.4+Math.abs(v)/mx*2.8,0.4,3.2).toFixed(2));});}
+  function updateLearnStats(){const el=$("#learn-stats");if(!el)return;const dog=netB.forward(imgToX(DOG)).acts[3],cat=netB.forward(imgToX(CAT)).acts[3];
+    el.innerHTML=`<div class="ls"><div class="lsv">${learnIter}</div><div class="lsk">قدمِ آموزش</div></div>
+      <div class="ls"><div class="lsv">${learnLosses.length?learnLosses[learnLosses.length-1].toFixed(2):"—"}</div><div class="lsk">خطا (کمتر=بهتر)</div></div>
+      <div class="ls"><div class="lsv">${Math.round(accuracy(netB)*100)}٪</div><div class="lsk">دقت</div></div>
+      <div class="ls"><div class="lsv">🐕 ${Math.round(dog[0]*100)}٪ · 🐈 ${Math.round(cat[1]*100)}٪</div><div class="lsk">اطمینان</div></div>`;}
+  function drawLoss(){const c=$("#loss");if(!c)return;const w=c.width=c.clientWidth*2,h=c.height=160,ctx=c.getContext("2d");ctx.clearRect(0,0,w,h);if(learnLosses.length<2)return;
+    const mx=Math.max(...learnLosses),mn=Math.min(...learnLosses,0);ctx.strokeStyle="#ff9a52";ctx.lineWidth=3;ctx.beginPath();
+    learnLosses.forEach((v,i)=>{const x=i/(learnLosses.length-1)*w,y=h-((v-mn)/((mx-mn)||1))*(h-16)-8;i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();}
+  function learnStep(n=1){for(let k=0;k<n;k++){const dog=Math.random()<0.5;const L=netB.trainStep(imgToX(noisy(dog?DOG:CAT)),dog?[1,0]:[0,1],0.5);learnIter++;if(learnIter%2===0||n===1)learnLosses.push(L);}
+    if(learnLosses.length>120)learnLosses=learnLosses.slice(-120);refreshLearnEdges();drawLoss();updateLearnStats();}
+  function learnAuto(){const btn=$("#btn-auto");
+    if(learnTimer){clearInterval(learnTimer);learnTimer=null;if(btn)btn.textContent="▶ آموزشِ خودکار";return;}
+    if(btn)btn.textContent="⏸ توقف";
+    learnTimer=setInterval(()=>{if(!$("#loss")){clearInterval(learnTimer);learnTimer=null;return;}learnStep(6);
+      if(learnIter>=1200){clearInterval(learnTimer);learnTimer=null;const b=$("#btn-auto");if(b)b.textContent="▶ آموزشِ خودکار";}},90);}
+  function learnReset(){if(learnTimer){clearInterval(learnTimer);learnTimer=null;const b=$("#btn-auto");if(b)b.textContent="▶ آموزشِ خودکار";}
+    netB.reseed();learnLosses=[];learnIter=0;refreshLearnEdges();drawLoss();updateLearnStats();}
+
+  /* ---------- صحنه ۴: هشت نود ---------- */
+  const NDW=720,NDH=240;let ndSVG,ndPL,ndNodes,ndBusy=false;
+  function buildNodes(){
+    const h=$("#nodes-svg");h.innerHTML="";ndSVG=Ec("svg",{viewBox:`0 0 ${NDW} ${NDH}`,class:"flow-svg"});h.appendChild(ndSVG);
+    const N=8,pad=60,y=150,step=(NDW-2*pad)/(N-1),xs=Array.from({length:N},(_,i)=>pad+i*step);
+    ndNodes=xs.map((x,i)=>{const c=Ec("circle",{cx:x,cy:y,r:18,fill:"var(--bg3)",stroke:"var(--line2)","stroke-width":1.4});ndSVG.appendChild(c);
+      const t=Ec("text",{x,y:y+4,"text-anchor":"middle",class:"nn-val"});t.textContent=i;t.setAttribute("fill","var(--ink-dim)");ndSVG.appendChild(t);return {x,y,c};});
+    ndSVG.appendChild(Ec("text",{x:NDW/2,y:NDH-16,"text-anchor":"middle",class:"lay-label"})).textContent="هشت نود = هشت موقعیت در متن";
+    ndPL=pulseLayer(ndSVG);
+  }
+  function flowNodes(){if(ndBusy)return;ndBusy=true;ndPL.clear();ndNodes.forEach(n=>{n.c.setAttribute("fill","var(--bg3)");n.c.style.filter="none";});let i=0;
+    (function step(){if(i>=8){ndBusy=false;return;}const tgt=ndNodes[i];tgt.c.setAttribute("fill",colL(0.9));tgt.c.style.filter=`drop-shadow(0 0 9px ${colL(0.9)})`;
+      for(let j=0;j<=i;j++){const src=ndNodes[j];ndPL.spawn(src.x,src.y-(j===i?0:14),tgt.x,tgt.y-14,{color:"var(--hot2)",r:4,dur:520,delay:(i-j)*40});}i++;setTimeout(step,360);})();}
+
+  /* ---------- ناوبریِ تب‌ها ---------- */
+  const builders={neuron:buildNeuron,net:buildNetScene,learn:buildLearn,nodes:buildNodes};
+  const builtT={};
+  function showTab(id){
+    $$(".tab").forEach(b=>b.classList.toggle("on",b.dataset.t===id));
+    $$(".panel").forEach(p=>p.classList.toggle("show",p.id==="p-"+id));
+    if(!builtT[id]){builders[id]();builtT[id]=true;} else if(id==="learn")drawLoss();
+  }
+  $$(".tab").forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+  $("#btn-run").onclick=runForward;
+  $("#btn-dog").onclick=()=>loadPreset("dog");
+  $("#btn-cat").onclick=()=>loadPreset("cat");
+  $("#btn-clear").onclick=()=>{netGrid=Array.from({length:6},()=>Array(6).fill(0));buildGrid();paintInputs(imgToX(netGrid));};
+  $$(".nr-slider").forEach(s=>s.oninput=()=>{const k=s.dataset.k,i=+s.dataset.i,v=+s.value/100;if(k==="x")nrIn[i]=v;else nrW[i]=v*2-1;updateNeuron();});
+  $("#btn-step").onclick=()=>learnStep(20);
+  $("#btn-auto").onclick=learnAuto;
+  $("#btn-reset").onclick=learnReset;
+  $("#btn-flow").onclick=flowNodes;
+  document.addEventListener("pointerup",()=>painting=false);
+  showTab("neuron");
+}
+
+/* ===================== INIT ===================== */
+renderSidebar();
+go(0);
+updateProgress();
+</script>
+</body>
+</html>
